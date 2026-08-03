@@ -63,8 +63,15 @@ class ParserState {
 
 export function parse(tokens: Token[], filename?: string): Document {
   const state = new ParserState(tokens, filename);
+
+  // Collect prologue (raw JS lines before the first HAML construct)
+  const prologue: string[] = [];
+  while (state.current?.type === TokenType.PROLOGUE) {
+    prologue.push(state.advance()!.value);
+  }
+
   const children = parseBlock(state);
-  return new Document(children);
+  return new Document(children, prologue);
 }
 
 // ─── Block Parsing ─────────────────────────────────────────

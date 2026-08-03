@@ -51,10 +51,12 @@ export class Expression {
 
 export class Document extends Node {
   readonly kind = 'Document' as const;
+  readonly prologue: string[];   // raw JS lines before first HAML construct
   readonly children: Node[];
 
-  constructor(children: Node[], location?: SourceLocation) {
+  constructor(children: Node[], prologue: string[] = [], location?: SourceLocation) {
     super(location);
+    this.prologue = prologue;
     this.children = children;
   }
 }

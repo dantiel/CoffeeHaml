@@ -16,6 +16,7 @@ export enum TokenType {
   FILTER       = 'FILTER',         // :filtername
   DOCTYPE      = 'DOCTYPE',        // !!! doctype
   TEXT         = 'TEXT',           // plain text content
+  PROLOGUE     = 'PROLOGUE',       // raw JS before first HAML construct
   INDENT       = 'INDENT',         // increase indentation
   DEDENT       = 'DEDENT',         // decrease indentation
   NEWLINE      = 'NEWLINE',        // line break
@@ -40,6 +41,7 @@ export function tokenize(source: string, filename?: string): Token[] {
   const indentStack: number[] = [0]; // level 0 is always on the stack
 
   let offset = 0;
+  let inPrologue = true; // true until first HAML construct encountered
 
   for (const rawLine of lines) {
     const line = rawLine.replace(/\r$/, '');
@@ -59,6 +61,24 @@ export function tokenize(source: string, filename?: string): Token[] {
       offset += lineLength;
       continue;
     }
+
+    // ── Prologue detection: non-indented JS lines before first HAML construct ──
+    if (inPrologue && indent === 0 && !isHamlConstruct(content)) {
+      tokens.push({
+        type: TokenType.PROLOGUE,
+        value: content,
+        location: {
+          start: { line: 0, column: offset + indent },
+          end: { line: 0, column: offset + indent + content.length },
+          offset: offset + indent,
+          length: lineLength - indent,
+          file: filename,
+        },
+      });
+      offset += lineLength;
+      continue;
+    }
+    inPrologue = false; // first HAML construct or indented line locks us out of prologue
 
     // Handle indentation changes
     const currentIndent = indentStack[indentStack.length - 1];
@@ -305,6 +325,15 @@ function parseModifiersAndAttrs(
 }
 
 // ─── Helpers ───────────────────────────────────────────────
+
+/** Returns true if a line of content starts a HAML construct (not plain text). */
+function isHamlConstruct(content: string): boolean {
+  const fc = content[0];
+  return fc === '%' || fc === '.' || fc === '#' || fc === '=' ||
+         fc === '-' || fc === '/' || fc === ':' ||
+         (fc === '!' && content[1] === '=') ||
+         content.startsWith('!!!');
+}
 
 function countIndent(line: string): number {
   let count = 0;

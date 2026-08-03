@@ -68,18 +68,67 @@ class EmitState {
 export function emit(ast: Document, options: EmitterOptions = {}): EmitResult {
   const state = new EmitState(options);
 
-  // Emit import if needed
+  // Emit import (always needed)
   state.emitLine(`import { jsx, jsxs, Fragment } from "${options.jsxRuntime || 'react/jsx-runtime'}";`);
+
+  // Emit prologue lines (verbatim JS before any HAML)
+  if (ast.prologue && ast.prologue.length > 0) {
+    for (const line of ast.prologue) {
+      state.emitLine(line);
+    }
+  }
   state.emitLine();
 
-  // Emit module body
-  emitNodes(ast.children, state, true);
+  // Component wrapping
+  if (options.wrap === 'component') {
+    const name = options.componentName || 'Component';
+    state.emitLine(`export default function ${name}(props) {`);
+    state.indentBlock(() => {
+      state.emit('return ');
+      const bodyExpr = compileComponentBody(ast, state);
+      state.output += `${bodyExpr};\n`;
+    });
+    state.emitLine('}');
+  } else {
+    emitNodes(ast.children, state, true);
+  }
 
   const result: EmitResult = { code: state.output, warnings: state.warnings };
   if (state.sourceMapGenerator) {
     result.sourceMap = state.sourceMapGenerator.toString();
   }
   return result;
+}
+
+// ─── Node Emitters ─────────────────────────────────────────
+
+// ─── Component Body Compilation ─────────────────────────────
+
+/** Emit all root children as a single JSX expression for component return. */
+function compileComponentBody(ast: Document, state: EmitState): string {
+  // Emit to a temporary buffer to capture statement-level output
+  const tmpState = new EmitState(state.options);
+  tmpState.indent = state.indent;
+
+  // emitNodes handles control flow consuming subsequent siblings
+  emitNodes(ast.children, tmpState, true);
+
+  // Transfer warnings from temp state
+  state.warnings.push(...tmpState.warnings);
+
+  const body = tmpState.output.trim();
+  if (!body) return 'null';
+
+  // Split into statements (each ends with ";\n")
+  const stmts = body
+    .split(';\n')
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+    .map(s => s.endsWith(';') ? s.slice(0, -1).trim() : s.trim());
+
+  if (stmts.length === 0) return 'null';
+  if (stmts.length === 1) return stmts[0];
+  return `jsxs(Fragment, {}, ${stmts.join(', ')})`;
 }
 
 // ─── Node Emitters ─────────────────────────────────────────

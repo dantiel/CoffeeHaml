@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite';
 import { compile } from './compiler.js';
 import type { CompilerOptions } from './types.js';
+import { basename } from 'path';
 
 export interface CoffeeHamlPluginOptions {
   compilerOptions?: CompilerOptions;
@@ -8,9 +9,17 @@ export interface CoffeeHamlPluginOptions {
 
 const COFFEEHAML_RE = /\.(coffeehaml|cohaml|chaml)$/;
 
+/** Derive a PascalCase component name from a filename stem. */
+function componentNameFromPath(filepath: string): string {
+  const stem = basename(filepath).split('.').shift() || 'Component';
+  return stem.charAt(0).toUpperCase() + stem.slice(1);
+}
+
 export default function coffeehaml(options: CoffeeHamlPluginOptions = {}): Plugin {
+  // Default to component mode — the only sensible default for Vite/React projects
   const compilerOpts: CompilerOptions = {
     sourceMap: true,
+    wrap: 'component',
     ...options.compilerOptions,
   };
 
@@ -23,6 +32,7 @@ export default function coffeehaml(options: CoffeeHamlPluginOptions = {}): Plugi
       const result = compile(code, {
         ...compilerOpts,
         filename: id,
+        componentName: compilerOpts.componentName || componentNameFromPath(id),
       });
 
       if (result.errors.length > 0) {

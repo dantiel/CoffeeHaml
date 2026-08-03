@@ -63,6 +63,8 @@ export function compile(source: string, options: CompilerOptions = {}): CompileR
       filename: options.filename,
       jsxRuntime: options.jsxRuntime,
       filters: options.filters,
+      wrap: options.wrap,
+      componentName: options.componentName,
     });
   } catch (e) {
     return {

@@ -30,6 +30,10 @@ export interface CompilerOptions {
   jsxImportSource?: string;
   /** Custom filter handlers. Key = filter name (e.g. 'markdown'), value = content→HTML transform. */
   filters?: Record<string, FilterHandler>;
+  /** Wrap output in a component function. 'component' emits `export default function Name(props) { return ...; }`. */
+  wrap?: 'none' | 'component';
+  /** Component name when wrap is 'component'. Defaults to 'Component' or derived from filename. */
+  componentName?: string;
 }
 
 /** Compiler result. */
@@ -71,6 +75,10 @@ export interface EmitterOptions {
   jsxRuntime?: string;
   /** Custom filter handlers. Key = filter name, value = content→HTML transform. */
   filters?: Record<string, FilterHandler>;
+  /** Wrap output in a component function. */
+  wrap?: 'none' | 'component';
+  /** Component name when wrap is 'component'. */
+  componentName?: string;
 }
 
 /** Emitter result. */
