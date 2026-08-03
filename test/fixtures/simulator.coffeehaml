@@ -1,0 +1,7 @@
+%SimulatorPanel{source: "gyro", width: "auto", height: 500}
+  - for servo in servos
+    %ServoGraph{channel: servo.channel}
+    %ServoPanel{servo: servo}
+
+  %Button{onClick: save, disabled: !connected}
+    Save

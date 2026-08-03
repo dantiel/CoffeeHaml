@@ -1,0 +1,14 @@
+# .npmignore — keep the package lean; only ship what's needed
+
+src/
+test/
+design/
+node_modules/
+.temp/
+*.tsbuildinfo
+tsconfig.json
+vitest.config.*
+.git/
+.github/
+
+# But keep docs for reference

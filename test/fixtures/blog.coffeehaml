@@ -1,0 +1,16 @@
+.page
+  .header
+    %h1.title Welcome
+    %nav
+      %a{href: "/"} Home
+      %a{href: "/about"} About
+  .content
+    - if posts.length
+      - for post in posts
+        .post
+          %h2= post.title
+          %p= post.excerpt
+    - else
+      %p.empty No posts yet.
+  .footer
+    %p © #{new Date().getFullYear()}

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CoffeeHaml — Haml structure. CoffeeScript semantics. React runtime.</title>
+  <meta name="description" content="CoffeeHaml compiles Haml-inspired indentation syntax with CoffeeScript expressions directly to React's JSX runtime. Zero runtime. Vite-native. 50% fewer tokens than JSX.">
+  <meta property="og:title" content="CoffeeHaml">
+  <meta property="og:description" content="Haml structure. CoffeeScript semantics. React runtime. Zero overhead.">
+  <meta property="og:url" content="https://dantiel.github.io/CoffeeHaml/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --fg: #e0d8c8;
+      --accent: #c8a45c;
+      --code-bg: #0d0d0d;
+      --muted: #888;
+      --border: #333;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+    h1 { font-size: 2.5rem; margin-bottom: 0.25rem; color: var(--accent); }
+    .tagline { font-size: 1.2rem; color: var(--muted); margin-bottom: 2rem; font-style: italic; }
+    h2 { font-size: 1.4rem; margin: 2rem 0 0.75rem; color: var(--accent); }
+    pre {
+      background: var(--code-bg);
+      padding: 1.25rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      border: 1px solid var(--border);
+    }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; }
+    a { color: var(--accent); }
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.4rem;
+      background: var(--accent);
+      color: var(--bg);
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin-right: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .stats {
+      display: flex;
+      gap: 2rem;
+      margin: 1.5rem 0;
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 2rem; color: var(--accent); font-weight: bold; }
+    .stat-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <h1>☕ CoffeeHaml</h1>
+  <p class="tagline">Haml structure. CoffeeScript semantics. React runtime. <br>Zero overhead. 50% fewer tokens than JSX.</p>
+
+  <p>
+    <a class="btn" href="https://github.com/dantiel/CoffeeHaml">GitHub</a>
+    <a class="btn btn-outline" href="https://www.npmjs.com/package/coffeehaml">npm</a>
+  </p>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num">0</div><div class="stat-label">Runtime KB</div></div>
+    <div class="stat"><div class="stat-num">~50%</div><div class="stat-label">Token Reduction</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Extensions</div></div>
+  </div>
+
+  <h2>Write This</h2>
+  <pre>.card
+  %h2= post.title
+  - if showBody
+    .body= post.content</pre>
+
+  <h2>Get This</h2>
+  <pre>import { jsx, jsxs } from "react/jsx-runtime";
+
+jsxs("div", { className: "card" },
+  jsx("h2", null, post.title),
+  ...(showBody ? [
+    jsx("div", { className: "body" }, post.content)
+  ] : [])
+);</pre>
+
+  <h2>Quick Start</h2>
+  <pre>npm install coffeehaml</pre>
+
+  <h3>Vite</h3>
+  <pre>// vite.config.ts
+import coffeehaml from 'coffeehaml/vite';
+
+export default {
+  plugins: [coffeehaml()],
+};</pre>
+
+  <h3>CLI</h3>
+  <pre>npx coffeehaml compile app.coffeehaml</pre>
+
+  <p style="margin-top:1.5rem;">
+    Supports <code>.chaml</code>, <code>.coffeehaml</code>, and <code>.cohaml</code> extensions.
+    Full documentation on <a href="https://github.com/dantiel/CoffeeHaml">GitHub</a>.
+  </p>
+
+  <footer>
+    MIT License · Created by <a href="https://github.com/dantiel">dantiel</a><br>
+    CoffeeHaml replaces JSX — not React. No runtime. No framework. Just a compiler.
+  </footer>
+</body>
+</html>
