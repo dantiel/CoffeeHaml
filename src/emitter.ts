@@ -242,6 +242,9 @@ function emitChildToJs(node: Node, state: EmitState): string {
   if (node instanceof ControlFlow) {
     return emitControlFlowToJs(node, state);
   }
+  if (node instanceof Filter) {
+    return emitFilterToJs(node, state);
+  }
 
   return 'null';
 }
@@ -453,19 +456,52 @@ function emitComment(comment: Comment, state: EmitState): void {
 }
 
 function emitFilter(filter: Filter, state: EmitState): void {
-  // Emit filter content as raw string (or processed depending on filter type)
-  switch (filter.filterName) {
+  const { filterName, content } = filter;
+
+  // 1. Plugin-registered filter handlers take priority
+  const handler = state.options.filters?.[filterName];
+  if (handler) {
+    const html = handler(content, filterName);
+    state.emitLine(
+      `jsx(Fragment, { dangerouslySetInnerHTML: { __html: ${JSON.stringify(html)} } });`
+    );
+    return;
+  }
+
+  // 2. Built-in passthrough filters
+  switch (filterName) {
     case 'css':
       state.emitLine(`/* <style> */`);
-      state.emitLine(`"${escapeString(filter.content)}";`);
+      state.emitLine(`"${escapeString(content)}";`);
       break;
     case 'javascript':
     case 'coffee':
-      state.emitLine(filter.content);
+      state.emitLine(content);
+      break;
+    case 'markdown':
+      // No handler registered — emit as raw text with a hint
+      state.emitLine(
+        `// :markdown filter used but no handler registered. Install 'marked' and add to compilerOptions.filters`
+      );
+      state.emitLine(`"${escapeString(content)}";`);
       break;
     default:
-      state.emitLine(`"${escapeString(filter.content)}";`);
+      state.emitLine(`"${escapeString(content)}";`);
   }
+}
+
+/** Emit a filter as a JS expression (for use as a child within parent elements). */
+function emitFilterToJs(filter: Filter, state: EmitState): string {
+  const { filterName, content } = filter;
+
+  const handler = state.options.filters?.[filterName];
+  if (handler) {
+    const html = handler(content, filterName);
+    return `jsx(Fragment, { dangerouslySetInnerHTML: { __html: ${JSON.stringify(html)} } })`;
+  }
+
+  // No handler — emit raw text as a string child
+  return escapeString(content);
 }
 
 function emitDoctype(doctype: Doctype, state: EmitState): void {

@@ -327,7 +327,34 @@ function parseFilter(state: ParserState): Filter {
   const token = state.expect(TokenType.FILTER);
   const parts = token.value.split('\n');
   const filterName = parts[0];
-  const content = parts.slice(1).join('\n');
+  let content = parts.slice(1).join('\n');
+
+  // Consume indented children as filter body (Haml convention).
+  // After `:markdown`, all indented content belongs to the filter.
+  if (state.isAt(TokenType.INDENT)) {
+    state.advance(); // skip INDENT
+    const lines: string[] = [];
+    while (state.current && !state.isAt(TokenType.DEDENT)) {
+      const tok = state.current;
+      if (tok.type === TokenType.TEXT) {
+        lines.push(tok.value);
+        state.advance();
+      } else if (tok.type === TokenType.NEWLINE) {
+        state.advance();
+      } else {
+        // Unexpected token in filter body — break to avoid infinite loop
+        break;
+      }
+    }
+    // Consume DEDENT
+    if (state.isAt(TokenType.DEDENT)) {
+      state.advance();
+    }
+    if (lines.length > 0) {
+      content = (content ? content + '\n' : '') + lines.join('\n');
+    }
+  }
+
   return new Filter(filterName, content, token.location);
 }
 

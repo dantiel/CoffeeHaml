@@ -161,7 +161,10 @@ function tokenizeLine(
   }
 
   // ── .class / #id (implicit div) ──
-  if (firstChar === '.' || firstChar === '#') {
+  // Only match if the modifier is immediately followed by a valid identifier char.
+  // This prevents `# Hello` (Markdown heading) or `. something` from being
+  // mistakenly parsed as modifiers inside filter blocks.
+  if ((firstChar === '.' || firstChar === '#') && /^[.#][\w-]/.test(content)) {
     const modResult = parseModifiersAndAttrs(content, 0, lineStartOffset, filename);
     tokens.push(...modResult.tokens);
     return tokens;

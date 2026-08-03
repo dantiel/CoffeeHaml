@@ -13,6 +13,11 @@ export interface SourceLocation {
   file?: string;   // source file path
 }
 
+/** A filter handler transforms raw filter content to an HTML string. */
+export interface FilterHandler {
+  (content: string, filterName: string): string;
+}
+
 /** Compiler options. */
 export interface CompilerOptions {
   /** Source file path (for error messages and source maps). */
@@ -23,6 +28,8 @@ export interface CompilerOptions {
   jsxRuntime?: string;
   /** JSX import style: 'classic' (React) or 'automatic' (default). */
   jsxImportSource?: string;
+  /** Custom filter handlers. Key = filter name (e.g. 'markdown'), value = content→HTML transform. */
+  filters?: Record<string, FilterHandler>;
 }
 
 /** Compiler result. */
@@ -62,6 +69,8 @@ export interface EmitterOptions {
   sourceMap?: boolean;
   filename?: string;
   jsxRuntime?: string;
+  /** Custom filter handlers. Key = filter name, value = content→HTML transform. */
+  filters?: Record<string, FilterHandler>;
 }
 
 /** Emitter result. */

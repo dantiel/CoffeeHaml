@@ -53,6 +53,7 @@ export function compile(source: string, options: CompilerOptions = {}): CompileR
       sourceMap: options.sourceMap,
       filename: options.filename,
       jsxRuntime: options.jsxRuntime,
+      filters: options.filters,
     });
   } catch (e) {
     return {
