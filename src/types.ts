@@ -77,4 +77,5 @@ export interface EmitterOptions {
 export interface EmitResult {
   code: string;
   sourceMap?: string;
+  warnings: CompileWarning[];
 }

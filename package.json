@@ -1,7 +1,7 @@
 {
   "name": "coffeehaml",
-  "version": "0.1.0",
-  "description": "Haml structure. CoffeeScript semantics. React runtime.",
+  "version": "0.2.0",
+  "description": "Haml structure. CoffeeScript semantics. React runtime. Zero runtime. Vite-native.",
   "type": "module",
   "license": "MIT",
   "author": "dantiel <dantiel@proton.me>",
@@ -19,8 +19,14 @@
     "coffeehaml": "./dist/cli.js"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./vite": "./dist/vite-plugin.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite-plugin.d.ts",
+      "default": "./dist/vite-plugin.js"
+    }
   },
   "files": [
     "dist",

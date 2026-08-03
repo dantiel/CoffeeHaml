@@ -3,7 +3,15 @@ import {
   Comment, Filter, Doctype, Node, Expression,
 } from './ast.js';
 import { compileExpression } from './expressions.js';
-import { EmitterOptions, EmitResult } from './types.js';
+import { EmitterOptions, EmitResult, CompileWarning } from './types.js';
+import { SourceMapGenerator } from 'source-map';
+
+// ─── Void elements (self-closing, no children) ─────────────
+
+const VOID_ELEMENTS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr',
+]);
 
 // ─── Emit State ────────────────────────────────────────────
 
@@ -13,10 +21,15 @@ class EmitState {
   needsFragment: boolean = false;
   needsImport: boolean = false;
   options: EmitterOptions;
-  sourceMapLines: string[] = [];
+  sourceMapGenerator: SourceMapGenerator | null = null;
+  outputLine: number = 0;
+  warnings: CompileWarning[] = [];
 
   constructor(options: EmitterOptions = {}) {
     this.options = options;
+    if (options.sourceMap && options.filename) {
+      this.sourceMapGenerator = new SourceMapGenerator({ file: options.filename });
+    }
   }
 
   emit(s: string): void {
@@ -30,6 +43,17 @@ class EmitState {
       this.output += ' '.repeat(this.indent * 2) + s;
     }
     this.output += '\n';
+    this.outputLine++;
+  }
+
+  mapSource(loc?: { line: number; column: number }): void {
+    if (!this.sourceMapGenerator || !loc) return;
+    const outputCol = this.indent * 2;
+    this.sourceMapGenerator.addMapping({
+      generated: { line: this.outputLine + 1, column: outputCol },
+      original: { line: loc.line + 1, column: loc.column },
+      source: this.options.filename || 'source.coffeehaml',
+    });
   }
 
   indentBlock(fn: () => void): void {
@@ -51,7 +75,11 @@ export function emit(ast: Document, options: EmitterOptions = {}): EmitResult {
   // Emit module body
   emitNodes(ast.children, state, true);
 
-  return { code: state.output };
+  const result: EmitResult = { code: state.output, warnings: state.warnings };
+  if (state.sourceMapGenerator) {
+    result.sourceMap = state.sourceMapGenerator.toString();
+  }
+  return result;
 }
 
 // ─── Node Emitters ─────────────────────────────────────────
@@ -85,7 +113,8 @@ function emitNode(node: Node, state: EmitState, isRoot: boolean): void {
 // ─── Element ───────────────────────────────────────────────
 
 function emitElement(el: Element, state: EmitState): void {
-  const hasChildren = el.children.length > 0;
+  const isVoid = typeof el.tag === 'string' && VOID_ELEMENTS.has(el.tag);
+  const hasChildren = !isVoid && el.children.length > 0;
   const fn = hasChildren ? 'jsxs' : 'jsx';
 
   // Tag
@@ -193,6 +222,7 @@ function attrNameToJs(name: string): string {
 }
 
 function emitImplicitDiv(div: ImplicitDiv, state: EmitState): void {
+  mapSourceLocation(div.location, state);
   const el = new Element('div', {
     classes: div.classes,
     id: div.id,
@@ -471,21 +501,30 @@ function emitFilter(filter: Filter, state: EmitState): void {
   // 2. Built-in passthrough filters
   switch (filterName) {
     case 'css':
-      state.emitLine(`/* <style> */`);
+      state.warnings.push({
+        message: ':css filter emits raw CSS string — not usable as a <style> tag in React. Use a plugin handler to inject CSS properly.',
+        location: filter.location,
+        phase: 'emitter',
+      });
       state.emitLine(`"${escapeString(content)}";`);
       break;
     case 'javascript':
+      state.warnings.push({
+        message: ':javascript filter emits raw JS at module level — an XSS risk with untrusted input. Ensure content is trusted.',
+        location: filter.location,
+        phase: 'emitter',
+      });
+      state.emitLine(content);
+      break;
     case 'coffee':
       state.emitLine(content);
       break;
-    case 'markdown':
-      // No handler registered — emit as raw text with a hint
-      state.emitLine(
-        `// :markdown filter used but no handler registered. Install 'marked' and add to compilerOptions.filters`
-      );
-      state.emitLine(`"${escapeString(content)}";`);
-      break;
     default:
+      state.warnings.push({
+        message: `:${filterName} filter used but no handler registered. Add one to compilerOptions.filters.`,
+        location: filter.location,
+        phase: 'emitter',
+      });
       state.emitLine(`"${escapeString(content)}";`);
   }
 }
@@ -514,4 +553,13 @@ function emitDoctype(doctype: Doctype, state: EmitState): void {
 
 function escapeString(s: string): string {
   return JSON.stringify(s);
+}
+
+function mapSourceLocation(
+  loc: { start: { line: number; column: number } } | undefined,
+  state: EmitState
+): void {
+  if (loc) {
+    state.mapSource(loc.start);
+  }
 }

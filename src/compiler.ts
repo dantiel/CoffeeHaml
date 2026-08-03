@@ -2,6 +2,7 @@ import { tokenize } from './lexer.js';
 import { parse } from './parser.js';
 import { emit } from './emitter.js';
 import { CompilerOptions, CompileResult, CompileError, CompileWarning } from './types.js';
+import { isCoffeeScriptAvailable, getCoffeeScriptUnavailableReason } from './expressions.js';
 import { readFileSync, existsSync } from 'fs';
 
 /** Supported CoffeeHaml file extensions (in order of preference). */
@@ -21,6 +22,14 @@ export function resolveCoffeeHamlFile(filepath: string): string | null {
 export function compile(source: string, options: CompilerOptions = {}): CompileResult {
   const errors: CompileError[] = [];
   const warnings: CompileWarning[] = [];
+
+  // Warn if CoffeeScript is unavailable — expressions will pass through raw
+  if (!isCoffeeScriptAvailable()) {
+    warnings.push({
+      message: `CoffeeScript expression compiler unavailable: ${getCoffeeScriptUnavailableReason()}. CoffeeScript expressions will passthrough raw and may produce invalid JavaScript. Install coffeescript as a peer dependency.`,
+      phase: 'compiler',
+    });
+  }
 
   // Phase 1: Lex
   let tokens;
@@ -59,8 +68,13 @@ export function compile(source: string, options: CompilerOptions = {}): CompileR
     return {
       code: '',
       errors: [wrapError(e, 'emitter')],
-      warnings: [],
+      warnings,
     };
+  }
+
+  // Collect warnings from emit phase
+  if (result.warnings) {
+    warnings.push(...result.warnings);
   }
 
   return {

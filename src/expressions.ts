@@ -12,6 +12,39 @@ function loadCoffeeScript(): any {
   }
 }
 
+/** Track CoffeeScript availability and warnings. */
+let _coffeeScriptAvailable: boolean | null = null;
+let _coffeeScriptUnavailableReason: string = '';
+
+function checkCoffeeScript(): boolean {
+  if (_coffeeScriptAvailable !== null) return _coffeeScriptAvailable;
+  try {
+    const cs = loadCoffeeScript();
+    if (cs && typeof cs.compile === 'function') {
+      _coffeeScriptAvailable = true;
+      return true;
+    }
+    _coffeeScriptAvailable = false;
+    _coffeeScriptUnavailableReason = 'CoffeeScript module loaded but has no compile() function';
+    return false;
+  } catch (e) {
+    _coffeeScriptAvailable = false;
+    _coffeeScriptUnavailableReason = `CoffeeScript unavailable: ${e instanceof Error ? e.message : String(e)}`;
+    return false;
+  }
+}
+
+/** Returns true if CoffeeScript is available for expression compilation. */
+export function isCoffeeScriptAvailable(): boolean {
+  return checkCoffeeScript();
+}
+
+/** Get a human-readable reason if CoffeeScript is not available. */
+export function getCoffeeScriptUnavailableReason(): string {
+  checkCoffeeScript(); // ensure initialized
+  return _coffeeScriptUnavailableReason;
+}
+
 /** Parse a CoffeeScript expression string into its AST representation.
  *  Uses the host's CoffeeScript installation. Returns null gracefully
  *  if CoffeeScript is unavailable or parsing fails. */
