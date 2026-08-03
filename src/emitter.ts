@@ -119,16 +119,50 @@ function compileComponentBody(ast: Document, state: EmitState): string {
   const body = tmpState.output.trim();
   if (!body) return 'null';
 
-  // Split into statements (each ends with ";\n")
-  const stmts = body
-    .split(';\n')
-    .map(s => s.trim())
-    .filter(s => s.length > 0)
-    .map(s => s.endsWith(';') ? s.slice(0, -1).trim() : s.trim());
+  // Split into JS statements respecting brackets and strings
+  const stmts = splitJsStatements(body);
 
   if (stmts.length === 0) return 'null';
   if (stmts.length === 1) return stmts[0];
   return `jsxs(Fragment, {}, ${stmts.join(', ')})`;
+}
+
+/** Split JS body into top-level statements, respecting string literals
+ *  and bracket depth. Only splits on `;` at depth 0 followed by newline. */
+function splitJsStatements(body: string): string[] {
+  const stmts: string[] = [];
+  let depth = 0;       // {} [] ()
+  let inString: string | null = null;
+  let start = 0;
+
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+
+    if (inString) {
+      if (ch === '\\') { i++; continue; }
+      if (ch === inString) { inString = null; }
+      continue;
+    }
+
+    if (ch === "'" || ch === '"' || ch === '`') { inString = ch; continue; }
+    if (ch === '{' || ch === '[' || ch === '(') { depth++; continue; }
+    if (ch === '}' || ch === ']' || ch === ')') { depth--; continue; }
+
+    if (ch === ';' && depth === 0 && body[i + 1] === '\n') {
+      let stmt = body.slice(start, i).trim();
+      if (stmt) stmts.push(stmt);
+      start = i + 2; // skip ;\n
+      i++;           // skip \n
+    }
+  }
+
+  // Trailing content after last ;
+  const last = body.slice(start).trim();
+  if (last) {
+    stmts.push(last.endsWith(';') ? last.slice(0, -1).trim() : last);
+  }
+
+  return stmts;
 }
 
 // ─── Node Emitters ─────────────────────────────────────────
@@ -336,10 +370,26 @@ function emitControlFlow(
   state: EmitState,
   _isRoot: boolean
 ): void {
-  if (cf.isLoop) {
+  if (cf.controlKind === 'statement') {
+    emitStatement(cf, remaining, state);
+  } else if (cf.isLoop) {
     emitLoop(cf, remaining, state);
   } else {
     emitConditional(cf, remaining, state);
+  }
+}
+
+/** Emit an arbitrary CoffeeScript statement (- code). */
+function emitStatement(cf: ControlFlow, remaining: Node[], state: EmitState): void {
+  const js = compileExpression(cf.expression);
+  state.emitLine(`${js};`);
+
+  if (cf.children.length > 0) {
+    emitNodes(cf.children, state);
+  }
+
+  if (remaining.length > 0) {
+    emitNodes(remaining, state);
   }
 }
 
@@ -505,6 +555,12 @@ function emitControlFlowToJs(cf: ControlFlow, state: EmitState): string {
         : 'null';
     const alternate = cf.next ? emitControlFlowToJs(cf.next, state) : 'null';
     return `${condExpr} ? ${consequent} : ${alternate}`;
+  }
+
+  if (cf.controlKind === 'statement') {
+    // Inline statements can't be used as JSX children — pass through as comment
+    const js = compileExpression(cf.expression);
+    return `/* - ${js} */ null`;
   }
 
   return 'null';

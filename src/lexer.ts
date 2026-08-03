@@ -187,6 +187,25 @@ function tokenizeLine(
   if ((firstChar === '.' || firstChar === '#') && /^[.#][\w-]/.test(content)) {
     const modResult = parseModifiersAndAttrs(content, 0, lineStartOffset, filename);
     tokens.push(...modResult.tokens);
+    let pos = modResult.pos;
+
+    // Parse inline output or text after modifiers (same as %tag path)
+    const remaining = content.slice(pos).trimStart();
+    const trimmedOffset = content.length - remaining.length;
+    if (remaining) {
+      if (remaining.startsWith('= ') || remaining === '=') {
+        tokens.push({ type: TokenType.OUTPUT, value: remaining.slice(1).trimStart(), location: loc(trimmedOffset + 1, content.length) });
+      } else if (remaining.startsWith('!= ')) {
+        tokens.push({ type: TokenType.OUTPUT_UNESC, value: remaining.slice(2).trimStart(), location: loc(trimmedOffset + 2, content.length) });
+      } else if (!remaining.startsWith('{') && !remaining.startsWith('(')) {
+        tokens.push({
+          type: TokenType.TEXT,
+          value: remaining,
+          location: loc(trimmedOffset, content.length),
+        });
+      }
+    }
+
     return tokens;
   }
 

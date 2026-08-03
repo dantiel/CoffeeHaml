@@ -300,15 +300,18 @@ function parseControlKind(source: string): ControlFlowKind {
     case 'for': return 'for';
     case 'while': return 'while';
     case 'else': return 'else';
-    default: return 'if'; // default
+    default: return 'statement';
   }
 }
 
 function stripControlKeyword(source: string, kind: ControlFlowKind): string {
   const trimmed = source.trimStart();
+  if (kind === 'statement') {
+    return trimmed; // no keyword to strip — entire source is the statement
+  }
   // Remove the keyword and any whitespace after it
   const keyword = kind === 'else' ? 'else' : kind;
-  const re = new RegExp(`^\\s*${keyword}\\b\\s*`);
+  const re = new RegExp(`^\\\\s*${keyword}\\\\b\\\\s*`);
   return trimmed.replace(re, '');
 }
 

@@ -13,7 +13,7 @@ export type NodeKind =
   | 'Filter'
   | 'Doctype';
 
-export type ControlFlowKind = 'if' | 'unless' | 'for' | 'while' | 'else';
+export type ControlFlowKind = 'if' | 'unless' | 'for' | 'while' | 'else' | 'statement';
 export type CommentKind = 'haml' | 'html';
 export type OutputKind = 'escaped' | 'unescaped';
 
