@@ -88,7 +88,11 @@ export function compileExpression(expr: Expression): string {
 
 /** Strip CoffeeScript's wrapper to get a clean expression.
  *  CoffeeScript.compile('x + 1', {bare: true}) → "var x;\n\nx + 1;\n"
- *  We want just "x + 1" */
+ *  We want just "x + 1".
+ *
+ *  When CoffeeScript generates var declarations (e.g. for ?. operator:
+ *  "var ref;\n(ref = a) != null ? ref.b : void 0"), stripping them leaves
+ *  undeclared refs. We wrap in an IIFE to scope the vars locally. */
 function stripCoffeeWrapper(js: string, _original: string): string {
   let result = js.trim();
 
@@ -98,13 +102,65 @@ function stripCoffeeWrapper(js: string, _original: string): string {
   // If result is multiline, take the last significant line
   const lines = result.split('\n').filter(l => l.trim() !== '');
   if (lines.length > 0) {
-    // Remove 'var' declarations from the expression
+    const varLines = lines.filter(l => /^\s*var\b/.test(l));
     const meaningful = lines.filter(l => !/^\s*var\b/.test(l));
+
     if (meaningful.length > 0) {
+      if (varLines.length > 0) {
+        // Var declarations stripped — wrap in IIFE to keep refs scoped
+        const body = meaningful.join(' ');
+        return `(() => { ${varLines.join(' ')} return ${body}; })()`;
+      }
       return meaningful.join('\n');
     }
     return lines[lines.length - 1];
   }
 
   return result;
+}
+
+/** Compile a CoffeeScript statement, preserving variable declarations.
+ *  CoffeeScript.compile('sim = useSimulation()', {bare: true}) → "var sim;\n\nsim = useSimulation();\n"
+ *  We want: "const sim = useSimulation();"
+ *  Multi-var: "var a, b; a = 1; b = 2;" → "let a = 1; let b = 2;" */
+export function compileStatement(source: string): string {
+  try {
+    const CoffeeScript = loadCoffeeScript();
+    if (CoffeeScript && typeof CoffeeScript.compile === 'function') {
+      const js = CoffeeScript.compile(source, {
+        bare: true,
+        inlineMap: false,
+      });
+      return stripToConst(js.trim());
+    }
+  } catch { /* fall through */ }
+  return source;
+}
+
+/** Convert CoffeeScript var declarations to const/let statements. */
+function stripToConst(js: string): string {
+  const lines = js.split('\n').filter(l => l.trim() !== '');
+
+  // Pattern: "var x, y;" followed by assignment lines
+  const varLine = lines.find(l => /^\s*var\b/.test(l));
+  if (!varLine) return js.replace(/;\s*$/, '');
+
+  // Extract var names
+  const varNames = varLine.replace(/^\s*var\s+/, '').replace(/;\s*$/, '').split(',').map(s => s.trim()).filter(Boolean);
+
+  // Find assignment lines
+  const assignments: string[] = [];
+  for (const name of varNames) {
+    const assignLine = lines.find(l => {
+      const trimmed = l.trim();
+      return trimmed.startsWith(`${name} =`) || trimmed.startsWith(`${name}=`);
+    });
+    if (assignLine) {
+      assignments.push('const ' + assignLine.trim().replace(/;\s*$/, ''));
+    }
+  }
+
+  if (assignments.length > 0) return assignments.join('; ');
+  // Fallback: keep var line, drop empty lines
+  return lines.filter(l => !/^\s*$/.test(l)).join(' ').replace(/;\s*$/, '');
 }
