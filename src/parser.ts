@@ -1,8 +1,8 @@
 import { Token, TokenType } from './lexer.js';
 import {
   Document, Element, ImplicitDiv, Text, Output, ControlFlow,
-  Comment, Filter, Doctype, Expression, Attribute,
-  Node, OutputKind, ControlFlowKind,
+  Comment, Filter, Doctype, Expression,
+  AnyAttribute, Node, OutputKind, ControlFlowKind,
 } from './ast.js';
 import { SourceLocation, CompileError } from './types.js';
 
@@ -138,7 +138,7 @@ function parseElement(state: ParserState): Element {
 
   let classes: string[] = [];
   let id: string | null = null;
-  let attributes: Attribute[] = [];
+  let attributes: AnyAttribute[] = [];
   let isSelfClosing = false;
 
   // Parse modifiers and attributes
@@ -199,7 +199,7 @@ function parseElement(state: ParserState): Element {
 function parseImplicitDiv(state: ParserState): ImplicitDiv {
   let classes: string[] = [];
   let id: string | null = null;
-  let attributes: Attribute[] = [];
+  let attributes: AnyAttribute[] = [];
 
   const firstToken = state.current!; // for location
 
@@ -394,8 +394,8 @@ function parseAttributeBlock(
   source: string,
   _style: '{}' | '()',
   _location?: SourceLocation
-): Attribute[] {
-  const attrs: Attribute[] = [];
+): AnyAttribute[] {
+  const attrs: AnyAttribute[] = [];
   if (!source.trim()) return attrs;
 
   // Simple attribute parser: split on commas outside of brackets/strings
@@ -404,6 +404,22 @@ function parseAttributeBlock(
   for (const pair of pairs) {
     const trimmed = pair.trim();
     if (!trimmed) continue;
+
+    // Spread attribute: props... (CoffeeScript form) or ...props (JSX form)
+    if (trimmed.endsWith('...')) {
+      const expr = trimmed.slice(0, -3).trim();
+      if (expr) {
+        attrs.push({ spread: true, expression: new Expression(expr) });
+      }
+      continue;
+    }
+    if (trimmed.startsWith('...')) {
+      const expr = trimmed.slice(3).trim();
+      if (expr) {
+        attrs.push({ spread: true, expression: new Expression(expr) });
+      }
+      continue;
+    }
 
     const colonIdx = findColon(trimmed);
     if (colonIdx === -1) {

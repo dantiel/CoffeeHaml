@@ -68,7 +68,7 @@ export class Element extends Node {
   readonly tag: string | Expression;   // 'div', 'MyComponent', or Expression
   readonly classes: string[];           // from .class modifiers
   readonly id: string | null;           // from #id modifier
-  readonly attributes: Attribute[];     // from {}/() blocks
+  readonly attributes: AnyAttribute[];  // from {}/() blocks
   readonly children: Node[];            // nested child nodes
   readonly isComponent: boolean;        // true if tag starts uppercase
   readonly isSelfClosing: boolean;      // void elements or %.../
@@ -78,7 +78,7 @@ export class Element extends Node {
     opts: {
       classes?: string[];
       id?: string | null;
-      attributes?: Attribute[];
+      attributes?: AnyAttribute[];
       children?: Node[];
       isComponent?: boolean;
       isSelfClosing?: boolean;
@@ -96,12 +96,21 @@ export class Element extends Node {
   }
 }
 
-/** An attribute on an element — key is always a string, value is an expression. */
+/** A static attribute on an element — key is a string, value is an expression. */
 export interface Attribute {
+  spread?: undefined;
   name: string;
   value: Expression;
   shorthand: boolean; // true if {foo} shorthand → foo={foo}
 }
+
+/** A spread attribute: {props...} or {...props} → {...props} in JSX. */
+export interface SpreadAttribute {
+  spread: true;
+  expression: Expression;
+}
+
+export type AnyAttribute = Attribute | SpreadAttribute;
 
 // ─── ImplicitDiv ───────────────────────────────────────────
 
@@ -110,14 +119,14 @@ export class ImplicitDiv extends Node {
   readonly kind = 'ImplicitDiv' as const;
   readonly classes: string[];
   readonly id: string | null;
-  readonly attributes: Attribute[];
+  readonly attributes: AnyAttribute[];
   readonly children: Node[];
 
   constructor(
     opts: {
       classes?: string[];
       id?: string | null;
-      attributes?: Attribute[];
+      attributes?: AnyAttribute[];
       children?: Node[];
       location?: SourceLocation;
     } = {}

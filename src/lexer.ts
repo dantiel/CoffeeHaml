@@ -312,7 +312,7 @@ function parseModifiersAndAttrs(
     // {attribute block}
     if (ch === '{') {
       const block = extractBracketed(content, pos, '{', '}');
-      if (block) {
+      if (block !== null) {
         tokens.push({ type: TokenType.ATTRS_BRACE, value: block, location: loc(pos, pos + block.length + 2) });
         pos += block.length + 2;
       } else {
@@ -326,7 +326,7 @@ function parseModifiersAndAttrs(
     // (attribute block)
     if (ch === '(') {
       const block = extractBracketed(content, pos, '(', ')');
-      if (block) {
+      if (block !== null) {
         tokens.push({ type: TokenType.ATTRS_PAREN, value: block, location: loc(pos, pos + block.length + 2) });
         pos += block.length + 2;
       } else {

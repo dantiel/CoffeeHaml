@@ -254,6 +254,13 @@ function buildAttributes(el: Element): string[] {
 
   // Named attributes
   for (const attr of el.attributes) {
+    // Spread attribute: {...props}
+    if (attr.spread) {
+      const valJs = compileExpression(attr.expression);
+      parts.push(`...${valJs}`);
+      continue;
+    }
+
     const valJs = compileExpression(attr.value);
     const name = attrNameToJs(attr.name);
 
@@ -283,8 +290,8 @@ function buildAttributes(el: Element): string[] {
   }
 
   // style as object
-  const styleAttr = el.attributes.find(a => attrNameToJs(a.name) === 'style');
-  if (styleAttr && !styleAttr.shorthand) {
+  const styleAttr = el.attributes.find(a => !a.spread && attrNameToJs(a.name) === 'style');
+  if (styleAttr && !styleAttr.spread && !styleAttr.shorthand) {
     // Already handled above — but ensure it's an object expression
   }
 
