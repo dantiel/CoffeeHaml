@@ -1,6 +1,6 @@
 {
   "name": "coffeehaml",
-  "version": "0.2.0",
+  "version": "0.3.2",
   "description": "Haml structure. CoffeeScript semantics. React runtime. Zero runtime. Vite-native.",
   "type": "module",
   "license": "MIT",
