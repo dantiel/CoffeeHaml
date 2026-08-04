@@ -79,16 +79,15 @@ export function emit(ast: Document, options: EmitterOptions = {}): EmitResult {
   }
   state.emitLine();
 
-  // Component wrapping
-  if (options.wrap === 'component') {
+  // Component / HOC wrapping
+  const wrap = options.wrap;
+  if (wrap && wrap !== 'none') {
     const name = options.componentName || 'Component';
-    state.emitLine(`export default function ${name}(props) {`);
-    state.indentBlock(() => {
-      state.emit('return ');
-      const bodyExpr = compileComponentBody(ast, state);
-      state.output += `${bodyExpr};\n`;
-    });
-    state.emitLine('}');
+    const hocs: string[] = wrap === 'component' ? [] : wrap === 'observer' ? ['observer'] : wrap;
+    const bodyExpr = compileComponentBody(ast, state);
+    const inner = `function ${name}(props) { return ${bodyExpr}; }`;
+    const wrapped = hocs.reduceRight((acc, hoc) => `${hoc}(${acc})`, inner);
+    state.emitLine(`export default ${wrapped}`);
   } else {
     emitNodes(ast.children, state, true);
   }

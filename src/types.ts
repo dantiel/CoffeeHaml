@@ -30,9 +30,11 @@ export interface CompilerOptions {
   jsxImportSource?: string;
   /** Custom filter handlers. Key = filter name (e.g. 'markdown'), value = content→HTML transform. */
   filters?: Record<string, FilterHandler>;
-  /** Wrap output in a component function. 'component' emits `export default function Name(props) { return ...; }`. */
-  wrap?: 'none' | 'component';
-  /** Component name when wrap is 'component'. Defaults to 'Component' or derived from filename. */
+  /** Wrap output. 'component' → `export default function Name(props) { ... }`.
+   *  'observer' → `export default observer(function Name(props) { ... })` (shorthand for ['observer']).
+   *  string[] → HOC chain: `export default hoc1(hoc2(function Name(props) { ... }))`. */
+  wrap?: 'none' | 'component' | 'observer' | string[];
+  /** Component name for wrapped output. Defaults to 'Component' or derived from filename. */
   componentName?: string;
 }
 
@@ -75,9 +77,9 @@ export interface EmitterOptions {
   jsxRuntime?: string;
   /** Custom filter handlers. Key = filter name, value = content→HTML transform. */
   filters?: Record<string, FilterHandler>;
-  /** Wrap output in a component function. */
-  wrap?: 'none' | 'component';
-  /** Component name when wrap is 'component'. */
+  /** Wrap output. 'component' | 'observer' | string[]. */
+  wrap?: 'none' | 'component' | 'observer' | string[];
+  /** Component name for wrapped output. */
   componentName?: string;
 }
 
