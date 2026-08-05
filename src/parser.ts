@@ -12,6 +12,7 @@ class ParserState {
   tokens: Token[];
   pos: number;
   filename?: string;
+  errors: CompileError[] = [];
 
   constructor(tokens: Token[], filename?: string) {
     this.tokens = tokens;
@@ -33,17 +34,43 @@ class ParserState {
     return token;
   }
 
-  expect(type: TokenType): Token {
+  /** Record an error and attempt recovery by skipping to the next safe boundary. */
+  error(message: string, code: string = 'PARSE_ERROR'): void {
+    this.errors.push(new CompileError(
+      message,
+      'parser',
+      code,
+      this.current?.location,
+    ));
+  }
+
+  /** Expect a token type. On mismatch, records error and recovers (never throws). */
+  expect(type: TokenType): Token | null {
     const token = this.current;
     if (!token || token.type !== type) {
-      throw new CompileError(
+      this.error(
         `Expected ${type} but got ${token?.type ?? 'EOF'}`,
-        'parser',
         'UNEXPECTED_TOKEN',
-        token?.location,
       );
+      // Recovery: skip to next structural token
+      this.recover();
+      return null;
     }
     return this.advance()!;
+  }
+
+  /** Skip tokens until a structural boundary (INDENT/DEDENT/block-level token). */
+  recover(): void {
+    while (this.current) {
+      const t = this.current.type;
+      if (t === TokenType.TAG || t === TokenType.CLASS || t === TokenType.ID ||
+          t === TokenType.OUTPUT || t === TokenType.OUTPUT_UNESC || t === TokenType.CONTROL ||
+          t === TokenType.FILTER || t === TokenType.COMMENT || t === TokenType.HTML_COMMENT ||
+          t === TokenType.DOCTYPE || t === TokenType.INDENT || t === TokenType.DEDENT) {
+        return;
+      }
+      this.advance();
+    }
   }
 
   skip(type: TokenType): boolean {
@@ -59,9 +86,15 @@ class ParserState {
   }
 }
 
+/** Result of parsing — AST plus any errors collected during error-recovery parsing. */
+export interface ParseResult {
+  document: Document;
+  errors: CompileError[];
+}
+
 // ─── Public API ────────────────────────────────────────────
 
-export function parse(tokens: Token[], filename?: string): Document {
+export function parse(tokens: Token[], filename?: string): ParseResult {
   const state = new ParserState(tokens, filename);
 
   // Collect prologue (raw JS lines before the first HAML construct)
@@ -71,7 +104,7 @@ export function parse(tokens: Token[], filename?: string): Document {
   }
 
   const children = parseBlock(state);
-  return new Document(children, prologue);
+  return { document: new Document(children, prologue), errors: state.errors };
 }
 
 // ─── Block Parsing ─────────────────────────────────────────
@@ -133,6 +166,8 @@ function parseNode(state: ParserState): Node | null {
 
 function parseElement(state: ParserState): Element {
   const tagToken = state.expect(TokenType.TAG);
+  if (!tagToken) return new Element('div', { location: state.current?.location });
+
   const tag = tagToken.value;
   const isComponent = /^[A-Z]/.test(tag);
 
@@ -266,6 +301,8 @@ function parseOutput(state: ParserState): Output {
 
 function parseControlFlow(state: ParserState): ControlFlow {
   const token = state.expect(TokenType.CONTROL);
+  if (!token) return new ControlFlow('statement', new Expression(''), [], null, state.current?.location);
+
   let source = token.value;
 
   // Normalize "else if" → "if" so it chains naturally in ternary
@@ -332,11 +369,13 @@ function isElse(source: string): boolean {
 
 function parseComment(state: ParserState): Comment {
   const token = state.expect(TokenType.COMMENT);
+  if (!token) return new Comment('haml', '');
   return new Comment('haml', token.value, token.location);
 }
 
 function parseHtmlComment(state: ParserState): Comment {
   const token = state.expect(TokenType.HTML_COMMENT);
+  if (!token) return new Comment('html', '');
   return new Comment('html', token.value, token.location);
 }
 
@@ -344,6 +383,7 @@ function parseHtmlComment(state: ParserState): Comment {
 
 function parseFilter(state: ParserState): Filter {
   const token = state.expect(TokenType.FILTER);
+  if (!token) return new Filter('', '');
   const parts = token.value.split('\n');
   const filterName = parts[0];
   let content = parts.slice(1).join('\n');
@@ -381,6 +421,7 @@ function parseFilter(state: ParserState): Filter {
 
 function parseDoctype(state: ParserState): Doctype {
   const token = state.expect(TokenType.DOCTYPE);
+  if (!token) return new Doctype('html');
   return new Doctype(token.value || 'html', token.location);
 }
 
@@ -388,6 +429,7 @@ function parseDoctype(state: ParserState): Doctype {
 
 function parseText(state: ParserState): Text {
   const token = state.expect(TokenType.TEXT);
+  if (!token) return new Text('');
   return new Text(token.value, token.location);
 }
 

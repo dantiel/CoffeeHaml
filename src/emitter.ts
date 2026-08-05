@@ -354,7 +354,18 @@ function emitChildToJs(node: Node, state: EmitState): string {
     return escapeString(node.value);
   }
   if (node instanceof Output) {
-    return compileExpression(node.expression, node.location);
+    // Arrow continuation: = expr -> with indented element children
+    if (node.children.length > 0 && /->\s*$/.test(node.expression.source.trim())) {
+      return emitArrowOutputToJs(node.expression.source, node.children, state);
+    }
+    // TEXT continuation: join text children into expression
+    const textContinuations = node.children
+      .filter(c => c instanceof Text)
+      .map(c => (c as Text).value);
+    const exprSource = textContinuations.length > 0
+      ? [node.expression.source, ...textContinuations].join(' ')
+      : node.expression.source;
+    return compileExpression(new Expression(exprSource), node.location);
   }
   if (node instanceof Element) {
     const hasChildren = node.children.length > 0;
@@ -637,6 +648,13 @@ function emitOutput(out: Output, state: EmitState): void {
     exprSource = [exprSource, ...textLines].join(' ');
   }
 
+  // Arrow continuation: = items.map (item) -> with indented element children
+  // Compiles to target.map((args) => <JSX>) — CoffeeScript arrow becomes JS arrow
+  if (elementChildren.length > 0 && /->\s*$/.test(exprSource.trim())) {
+    emitArrowOutput(exprSource, elementChildren, out, state);
+    return;
+  }
+
   const js = compileExpression(new Expression(exprSource), out.location);
   let result: string;
   if (out.outputKind === 'escaped') {
@@ -645,16 +663,94 @@ function emitOutput(out: Output, state: EmitState): void {
     result = `jsx(Fragment, {}, ${js})`;
   }
 
-  // Emit nested element children after the expression
+  // Emit nested element children after the expression (siblings, not body)
   for (const child of elementChildren) {
     emitNode(child, state, false);
   }
 
-  if (state.directEmit) {
-    state.emitLine(result + ';');
+  state.emitLine(result + ';');
+}
+
+/** Handle = expr -> with indented element children — compiles to an arrow function
+ *  returning JSX. E.g., = items.map (item) ->  + indented %li → items.map((item) => <li/>) */
+function emitArrowOutput(
+  exprSource: string,
+  elementChildren: Node[],
+  out: Output,
+  state: EmitState
+): void {
+  // Parse: strip trailing ->, extract call target and arrow args
+  const stripped = exprSource.replace(/\s*->\s*$/, '').trim();
+  // Match pattern: target (args) — everything up to last parenthesized arg list
+  const arrowMatch = stripped.match(/^(.+?)\s*\(([^)]*)\)\s*$/);
+  let callTarget: string;
+  let arrowArgs: string;
+
+  if (arrowMatch) {
+    callTarget = arrowMatch[1].trim();   // e.g., "items.map"
+    arrowArgs = arrowMatch[2].trim();    // e.g., "item" or "item, i"
   } else {
-    state.emitLine(result + ';');
+    // No parens: = -> with just -> (bare arrow)
+    callTarget = stripped;
+    arrowArgs = '';
   }
+
+  // Compile the call target as a CoffeeScript expression
+  const compiledTarget = compileExpression(
+    new Expression(callTarget),
+    out.location
+  );
+
+  // Compile children as JSX body
+  let body: string;
+  if (elementChildren.length === 1) {
+    body = emitChildToJs(elementChildren[0], state);
+  } else {
+    body = `jsxs(Fragment, { children: [${elementChildren.map(c => emitChildToJs(c, state)).join(', ')}] })`;
+  }
+
+  // Build the final expression
+  const arrowFn = arrowArgs
+    ? `(${arrowArgs}) => ${body}`
+    : `() => ${body}`;
+  const result = out.outputKind === 'escaped'
+    ? `jsx(Fragment, { children: ${compiledTarget}(${arrowFn}) })`
+    : `jsx(Fragment, {}, ${compiledTarget}(${arrowFn}))`;
+
+  state.emitLine(result + ';');
+}
+
+/** Inline version of emitArrowOutput — returns JS string for use inside emitChildToJs. */
+function emitArrowOutputToJs(
+  exprSource: string,
+  elementChildren: Node[],
+  state: EmitState
+): string {
+  const stripped = exprSource.replace(/\s*->\s*$/, '').trim();
+  const arrowMatch = stripped.match(/^(.+?)\s*\(([^)]*)\)\s*$/);
+  let callTarget: string;
+  let arrowArgs: string;
+
+  if (arrowMatch) {
+    callTarget = arrowMatch[1].trim();
+    arrowArgs = arrowMatch[2].trim();
+  } else {
+    callTarget = stripped;
+    arrowArgs = '';
+  }
+
+  const compiledTarget = compileExpression(new Expression(callTarget));
+  let body: string;
+  if (elementChildren.length === 1) {
+    body = emitChildToJs(elementChildren[0], state);
+  } else {
+    body = `jsxs(Fragment, { children: [${elementChildren.map(c => emitChildToJs(c, state)).join(', ')}] })`;
+  }
+
+  const arrowFn = arrowArgs
+    ? `(${arrowArgs}) => ${body}`
+    : `() => ${body}`;
+  return `${compiledTarget}(${arrowFn})`;
 }
 
 function emitComment(comment: Comment, state: EmitState): void {

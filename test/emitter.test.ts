@@ -5,7 +5,7 @@ import { emit } from '../src/emitter.js';
 
 function compile(src: string): string {
   const tokens = tokenize(src);
-  const ast = parse(tokens);
+  const ast = parse(tokens).document;
   return emit(ast).code;
 }
 

@@ -44,15 +44,15 @@ export function compile(source: string, options: CompilerOptions = {}): CompileR
   }
 
   // Phase 2: Parse
-  let ast;
-  try {
-    ast = parse(tokens, options.filename);
-  } catch (e) {
-    return {
-      code: '',
-      errors: [wrapError(e, 'parser')],
-      warnings: [],
-    };
+  const parsed = parse(tokens, options.filename);
+  const ast = parsed.document;
+
+  // Collect parse errors (non-fatal — parsing continues with recovery)
+  if (parsed.errors.length > 0) {
+    errors.push(...parsed.errors);
+    if (ast.children.length === 0) {
+      return { code: '', errors, warnings };
+    }
   }
 
   // Phase 3: Emit

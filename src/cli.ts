@@ -3,6 +3,7 @@ import { compileFile } from './index.js';
 import { writeFileSync, readFileSync, existsSync, watch, statSync, readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve, relative } from 'path';
+import { createInterface } from 'readline';
 import { CompilerOptions } from './types.js';
 
 function getVersion(): string {
@@ -22,6 +23,7 @@ if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
   Haml structure. CoffeeScript semantics. React runtime.
 
 Usage:
+  coffeehaml init                                        scaffold a new project
   coffeehaml compile <input> [-o <output>] [--source-map] [--wrap <mode>]
   coffeehaml watch <input> [-o <output>] [--source-map] [--wrap <mode>]
 
@@ -32,9 +34,10 @@ Options:
   -h, --help            Show this help
 
 Examples:
+  coffeehaml init                                        # interactive project scaffold
   coffeehaml compile app.chaml -o app.js --wrap component
-  coffeehaml compile app.chaml                         # prints to stdout
-  coffeehaml watch src/ --wrap observer                # watch and recompile on change
+  coffeehaml compile app.chaml                           # prints to stdout
+  coffeehaml watch src/ --wrap observer                  # watch and recompile on change
 `);
   process.exit(0);
 }
@@ -99,6 +102,194 @@ function doCompile(input: string, opts: ReturnType<typeof parseArgs>): boolean {
     process.stdout.write(result.code);
   }
   return true;
+}
+
+// ─── Init ──────────────────────────────────────────────────
+
+function ask(q: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise(resolve => {
+    rl.question(q, (answer: string) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+async function doInit(): Promise<void> {
+  const cwd = process.cwd();
+  const hasPkg = existsSync(join(cwd, 'package.json'));
+  const hasViteConfig = existsSync(join(cwd, 'vite.config.ts')) || existsSync(join(cwd, 'vite.config.js'));
+  const hasTsConfig = existsSync(join(cwd, 'tsconfig.json'));
+  console.log(`\n  ☕ CoffeeHaml init — project scaffold\n`);
+  console.log(`  Working directory: ${cwd}`);
+  console.log(`  Detected: ${[
+    hasPkg ? 'package.json' : '',
+    hasViteConfig ? 'Vite' : '',
+    hasTsConfig ? 'TypeScript' : '',
+    !hasPkg ? 'bare project' : '',
+  ].filter(Boolean).join(', ')}\n`);
+
+  // Question 1: Add dependency?
+  let addDep = true;
+  if (hasPkg) {
+    const ans = await ask('  Add coffeehaml as devDependency? (Y/n): ');
+    addDep = !/^n/i.test(ans);
+  } else {
+    console.log('  No package.json found — skipping dependency install.');
+    addDep = false;
+  }
+
+  // Question 2: Vite plugin?
+  let setupVite = false;
+  if (hasViteConfig) {
+    const ans = await ask('  Configure Vite plugin? (Y/n): ');
+    setupVite = !/^n/i.test(ans);
+  } else if (hasPkg) {
+    const ans = await ask('  No vite.config detected. Create one with CoffeeHaml plugin? (y/N): ');
+    setupVite = /^y/i.test(ans);
+  }
+
+  // Question 3: Sample component?
+  let createSample = true;
+  const ans = await ask('  Create sample .chaml component? (Y/n): ');
+  createSample = !/^n/i.test(ans);
+
+  // Question 4: npm scripts?
+  let addScripts = false;
+  if (hasPkg) {
+    const ans = await ask('  Add build/watch scripts to package.json? (Y/n): ');
+    addScripts = !/^n/i.test(ans);
+  }
+
+  console.log();
+
+  // ── Execute ──
+
+  // 1. Install dependency
+  if (addDep) {
+    console.log('  ⚡ Installing coffeehaml...');
+    const { execSync } = await import('child_process');
+    try {
+      execSync('npm install --save-dev coffeehaml', { cwd, stdio: 'inherit' });
+      console.log('  ✓ coffeehaml installed\n');
+    } catch {
+      console.log('  ✗ Install failed — continuing anyway\n');
+    }
+  }
+
+  // 2. Vite plugin
+  if (setupVite) {
+    const configPath = join(cwd, hasViteConfig
+      ? (existsSync(join(cwd, 'vite.config.ts')) ? 'vite.config.ts' : 'vite.config.js')
+      : 'vite.config.ts');
+    const ext = configPath.endsWith('.ts') ? 'ts' : 'js';
+
+    if (hasViteConfig) {
+      // Modify existing vite config — inject the import and plugin
+      let existing = readFileSync(configPath, 'utf-8');
+      const hasImport = /coffeehaml/.test(existing);
+      const hasPlugin = /coffeehaml\(\)/.test(existing);
+
+      if (!hasImport) {
+        existing = `import coffeehaml from 'coffeehaml/vite-plugin';\n` + existing;
+      }
+      if (!hasPlugin) {
+        // Insert coffeehaml() into plugins array
+        existing = existing.replace(
+          /(plugins\s*:\s*\[)/,
+          '$1\n    coffeehaml(),'
+        );
+        if (!/plugins\s*:\s*\[/.test(existing)) {
+          // No plugins array — add one after defineConfig({
+          existing = existing.replace(
+            /(defineConfig\s*\(\s*\{)/,
+            '$1\n  plugins: [coffeehaml()],'
+          );
+        }
+      }
+
+      writeFileSync(configPath, existing);
+      console.log(`  ✓ Updated ${relative(cwd, configPath)}\n`);
+    } else {
+      // Create new vite config
+      const tsContent = `import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import coffeehaml from 'coffeehaml/vite-plugin';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    coffeehaml(),
+  ],
+});`;
+      const jsContent = `import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import coffeehaml from 'coffeehaml/vite-plugin';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    coffeehaml(),
+  ],
+});`;
+      writeFileSync(configPath, ext === 'ts' ? tsContent : jsContent);
+      console.log(`  ✓ Created ${relative(cwd, configPath)}\n`);
+    }
+  }
+
+  // 3. Sample component
+  if (createSample) {
+    const srcDir = join(cwd, 'src');
+    if (!existsSync(srcDir)) {
+      const { mkdirSync } = await import('fs');
+      mkdirSync(srcDir, { recursive: true });
+    }
+    const samplePath = join(srcDir, 'App.chaml');
+    if (existsSync(samplePath)) {
+      console.log(`  ⚠ ${relative(cwd, samplePath)} already exists — skipping\n`);
+    } else {
+      const sample = `-# App.chaml — a sample CoffeeHaml component
+import { useState } from 'react'
+
+%div.app
+  %header
+    %h1= "CoffeeHaml ✨"
+    %p.subtitle Haml structure. CoffeeScript semantics. React runtime.
+
+  %main
+    - name = 'World'
+    %section.card
+      %h2= "Hello, #{name}!"
+      %p= "Counter: 0"
+
+    %footer
+      %small Built with coffeehaml v${getVersion()}
+`;
+      writeFileSync(samplePath, sample);
+      console.log(`  ✓ Created ${relative(cwd, samplePath)}\n`);
+    }
+  }
+
+  // 4. npm scripts
+  if (addScripts && hasPkg) {
+    const pkgPath = join(cwd, 'package.json');
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+    pkg.scripts = pkg.scripts || {};
+    if (!pkg.scripts['build:chaml']) {
+      pkg.scripts['build:chaml'] = 'coffeehaml compile src/ -o dist/';
+    }
+    if (!pkg.scripts['watch:chaml']) {
+      pkg.scripts['watch:chaml'] = 'coffeehaml watch src/ --wrap component';
+    }
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+    console.log('  ✓ Added build:chaml and watch:chaml scripts\n');
+  }
+
+  console.log('  🎉 Done! Start building:\n');
+  console.log('    npm run build:chaml       # compile once');
+  console.log('    npm run watch:chaml       # watch and recompile');
+  console.log('    npx coffeehaml watch src/ # ad-hoc watch\n');
 }
 
 const cmd = args[0];
@@ -180,6 +371,8 @@ if (cmd === 'compile') {
     console.error('\nStopped watching.');
     process.exit(0);
   });
+} else if (cmd === 'init') {
+  doInit();
 } else {
   console.error(`Unknown command: ${cmd}`);
   process.exit(1);

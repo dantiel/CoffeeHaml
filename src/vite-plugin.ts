@@ -35,6 +35,18 @@ export default function coffeehaml(options: CoffeeHamlPluginOptions = {}): Plugi
         componentName: compilerOpts.componentName || componentNameFromPath(id),
       });
 
+      // Inject React Fast Refresh pragma and HMR accept when in component mode
+      let preamble = '';
+      let postamble = '';
+      if (compilerOpts.wrap && compilerOpts.wrap !== 'none' && !compilerOpts.wrap.includes) {
+        // Component or observer mode — add Fast Refresh support
+        preamble = '// @refresh reset\n';
+        const name = compilerOpts.componentName || componentNameFromPath(id);
+        postamble = `\nif (import.meta.hot) {\n  import.meta.hot.accept((mod) => {\n    if (mod?.${name}) import.meta.hot?.data?.refresh?.();\n  });\n}\n`;
+      }
+
+      const finalCode = preamble + result.code + postamble;
+
       if (result.errors.length > 0) {
         const err = result.errors[0];
         this.error({
@@ -50,7 +62,7 @@ export default function coffeehaml(options: CoffeeHamlPluginOptions = {}): Plugi
       }
 
       return {
-        code: result.code,
+        code: finalCode,
         map: result.sourceMap ? { mappings: result.sourceMap } as any : null,
       };
     },

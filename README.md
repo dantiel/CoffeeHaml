@@ -79,6 +79,9 @@ expressions like `{onClick: handler}` or `{disabled: !connected}`).
 ### CLI
 
 ```bash
+# Scaffold a new project (interactive wizard)
+npx coffeehaml init
+
 # One-shot compile
 npx coffeehaml compile app.chaml -o app.js --wrap component
 
@@ -88,6 +91,7 @@ npx coffeehaml watch src/ --wrap observer
 
 | Flag | Description |
 |------|-------------|
+| `init` | Interactive project scaffold (Vite, dependency, samples) |
 | `-o`, `--output` | Write output to file |
 | `--source-map` | Emit inline source map |
 | `--wrap <mode>` | Wrap mode: `component`, `observer`, or comma-separated HOC list |
@@ -156,9 +160,11 @@ Full grammar: [`docs/grammar.md`](docs/grammar.md)
 
 ## Status
 
-**v0.5.0 — production beta.** The compiler pipeline (Lexer → Parser → Emitter)
-is complete. Source maps, component wrapping, spread attributes, statement/expression
-continuation, and source-located errors are all functional.
+**v0.6.0 — production beta.** The compiler pipeline (Lexer → Parser → Emitter)
+is complete. Source maps, component wrapping, spread attributes, arrow
+continuation (`= items.map (item) ->`), statement/expression continuation,
+source-located errors, `coffeehaml init` scaffold, Fast Refresh annotations,
+and multi-error parser recovery are all functional.
 
 | Feature | Status |
 |---------|--------|
@@ -178,10 +184,13 @@ continuation, and source-located errors are all functional.
 | Vite plugin with HMR | ✅ |
 | CLI `--wrap` flag | ✅ |
 | CLI `watch` mode | ✅ |
+| CLI `init` scaffold | ✅ |
+| `= expr ->` arrow continuation | ✅ |
 | Source-located error messages | ✅ |
+| Multi-error parser recovery | ✅ |
 | Source maps | ✅ |
 | CoffeeScript expression compilation | ✅ (requires peer dep) |
-| React Fast Refresh | 📅 Planned |
+| React Fast Refresh annotations | ✅ |
 
 ---
 
