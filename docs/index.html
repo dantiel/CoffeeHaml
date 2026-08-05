@@ -18,6 +18,10 @@
       --code-bg: #0d0d0d;
       --muted: #888;
       --border: #333;
+      --green: #8fb573;
+      --blue: #7ea9d0;
+      --red: #d4848c;
+      --purple: #b999d6;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -25,25 +29,28 @@
       background: var(--bg);
       color: var(--fg);
       line-height: 1.6;
-      max-width: 800px;
+      max-width: 840px;
       margin: 0 auto;
       padding: 3rem 1.5rem;
     }
     h1 { font-size: 2.5rem; margin-bottom: 0.25rem; color: var(--accent); }
-    .tagline { font-size: 1.2rem; color: var(--muted); margin-bottom: 2rem; font-style: italic; }
-    h2 { font-size: 1.4rem; margin: 2rem 0 0.75rem; color: var(--accent); }
+    .tagline { font-size: 1.2rem; color: var(--muted); margin-bottom: 1.5rem; font-style: italic; }
+    h2 { font-size: 1.4rem; margin: 2.5rem 0 0.75rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; color: var(--fg); }
     pre {
       background: var(--code-bg);
       padding: 1.25rem;
       border-radius: 8px;
       overflow-x: auto;
       font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 0.9rem;
-      line-height: 1.5;
+      font-size: 0.85rem;
+      line-height: 1.55;
       border: 1px solid var(--border);
+      margin: 0.75rem 0;
     }
-    code { font-family: 'SF Mono', 'Fira Code', monospace; }
-    a { color: var(--accent); }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.9em; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
     .btn {
       display: inline-block;
       padding: 0.6rem 1.4rem;
@@ -55,75 +62,291 @@
       margin-right: 0.75rem;
       margin-top: 0.5rem;
     }
+    .btn:hover { background: #d4b06a; text-decoration: none; }
     .btn-outline {
       background: transparent;
       color: var(--accent);
       border: 1px solid var(--accent);
     }
+    .btn-outline:hover { background: rgba(200,164,92,0.1); text-decoration: none; }
     .stats {
       display: flex;
       gap: 2rem;
       margin: 1.5rem 0;
+      flex-wrap: wrap;
     }
-    .stat { text-align: center; }
+    .stat { text-align: center; min-width: 90px; }
     .stat-num { font-size: 2rem; color: var(--accent); font-weight: bold; }
-    .stat-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; }
-    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+    .stat-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: #2a3a1a;
+      color: var(--green);
+      border: 1px solid rgba(143,181,115,0.3);
+    }
+    .badge-new {
+      background: #2a2010;
+      color: var(--accent);
+      border: 1px solid rgba(200,164,92,0.3);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--accent); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    td:last-child { text-align: right; }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 640px) {
+      .two-col { grid-template-columns: 1fr; }
+      body { padding: 1.5rem 1rem; }
+      h1 { font-size: 2rem; }
+    }
+    .example-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+      margin-top: 1.25rem;
+    }
+    .example-label:first-of-type { margin-top: 0; }
+    .hl { color: var(--muted); }        /* comment */
+    .kw { color: var(--red); }          /* keyword */
+    .tg { color: var(--blue); }         /* tag */
+    .at { color: var(--green); }        /* attr */
+    .st { color: var(--green); }        /* string */
+    .fn { color: var(--purple); }       /* func */
+    .cl { color: var(--blue); }         /* class */
+    .op { color: var(--accent); }       /* operator */
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.5rem 1.5rem;
+      margin: 1rem 0;
+    }
+    .feature-grid li { font-size: 0.9rem; margin-bottom: 0.3rem; }
+    blockquote {
+      border-left: 2px solid var(--accent);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
-  <h1>☕ CoffeeHaml</h1>
-  <p class="tagline">Haml structure. CoffeeScript semantics. React runtime. <br>Zero overhead. 50% fewer tokens than JSX.</p>
+
+  <h1>&#9749; CoffeeHaml</h1>
+  <p class="tagline">Haml structure. CoffeeScript semantics. React runtime.<br>Zero overhead. 50% fewer tokens than JSX.</p>
 
   <p>
     <a class="btn" href="https://github.com/dantiel/CoffeeHaml">GitHub</a>
     <a class="btn btn-outline" href="https://www.npmjs.com/package/coffeehaml">npm</a>
+    <a class="btn btn-outline" href="#quick-start">Quick Start</a>
   </p>
 
   <div class="stats">
     <div class="stat"><div class="stat-num">0</div><div class="stat-label">Runtime KB</div></div>
     <div class="stat"><div class="stat-num">~50%</div><div class="stat-label">Token Reduction</div></div>
-    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Extensions</div></div>
+    <div class="stat"><div class="stat-num">52 kB</div><div class="stat-label">Compiler Size</div></div>
+    <div class="stat"><div class="stat-num">25+</div><div class="stat-label">Features</div></div>
   </div>
 
+  <!-- EXAMPLE -->
   <h2>Write This</h2>
-  <pre>.card
-  %h2= post.title
-  - if showBody
-    .body= post.content</pre>
+
+  <pre><span class="hl">-# Dashboard.chaml</span>
+<span class="hl">import</span> { observer } <span class="hl">from</span> <span class="st">'mobx-react-lite'</span>
+<span class="hl">import</span> { useMemo } <span class="hl">from</span> <span class="st">'react'</span>
+
+<span class="hl">@observer</span>
+<span class="tg">%div</span>.<span class="cl">page</span>
+  <span class="tg">%header</span>
+    <span class="tg">%h1</span>= <span class="st">"Welcome, #{user.name}"</span>
+    <span class="tg">%nav</span>{ <span class="at">role</span>: <span class="st">'primary'</span> }
+      - <span class="kw">for</span> link <span class="kw">in</span> navLinks
+        <span class="tg">%a</span>{ <span class="at">href</span>: link.url }= link.label
+
+  <span class="tg">%main</span>
+    .dashboard-grid
+      = widgets.map <span class="fn">(widget) -&gt;</span>
+        <span class="tg">%Widget</span>{ widget, <span class="at">onDelete</span>: <span class="fn">-&gt;</span> handleDelete(widget.id) }
+
+    <span class="tg">%aside</span>
+      - <span class="kw">if</span> alerts.length &gt; 0
+        .alert-banner{ <span class="at">role</span>: <span class="st">'alert'</span> }
+          - <span class="kw">for</span> alert <span class="kw">in</span> alerts
+            <span class="tg">%p</span>= alert.message
+      - <span class="kw">else</span>
+        <span class="tg">%p</span>.<span class="cl">empty-state</span> No alerts — all clear.</pre>
 
   <h2>Get This</h2>
-  <pre>import { jsx, jsxs } from "react/jsx-runtime";
 
-jsxs("div", { className: "card" },
-  jsx("h2", null, post.title),
-  ...(showBody ? [
-    jsx("div", { className: "body" }, post.content)
-  ] : [])
-);</pre>
+  <pre><span class="hl">import</span> { jsx, jsxs, Fragment } <span class="hl">from</span> <span class="st">"react/jsx-runtime"</span>;
+<span class="hl">import</span> { observer } <span class="hl">from</span> <span class="st">"mobx-react-lite"</span>;
+<span class="hl">import</span> { useMemo } <span class="hl">from</span> <span class="st">"react"</span>;
 
-  <h2>Quick Start</h2>
-  <pre>npm install coffeehaml</pre>
+<span class="hl">export default</span> observer(<span class="kw">function</span> <span class="fn">Dashboard</span>(props) {
+  <span class="kw">return</span> jsxs(<span class="st">"div"</span>, { <span class="at">className</span>: <span class="st">"page"</span> },
+    jsxs(<span class="st">"header"</span>, <span class="kw">null</span>,
+      jsx(<span class="st">"h1"</span>, <span class="kw">null</span>, <span class="st">"Welcome, "</span> + user.name),
+      jsx(<span class="st">"nav"</span>, { <span class="at">role</span>: <span class="st">"primary"</span> },
+        ...navLinks.map(link =&gt; jsx(<span class="st">"a"</span>, { <span class="at">href</span>: link.url }, link.label))
+      )
+    ),
+    jsxs(<span class="st">"main"</span>, <span class="kw">null</span>,
+      jsx(<span class="st">"div"</span>, { <span class="at">className</span>: <span class="st">"dashboard-grid"</span> },
+        ...widgets.map(widget =&gt; jsx(Widget, { widget, <span class="at">onDelete</span>: () =&gt; handleDelete(widget.id) }))
+      ),
+      jsx(<span class="st">"aside"</span>, <span class="kw">null</span>,
+        ...(alerts.length &gt; 0 ? [
+          jsxs(<span class="st">"div"</span>, { <span class="at">className</span>: <span class="st">"alert-banner"</span>, <span class="at">role</span>: <span class="st">"alert"</span> },
+            ...alerts.map(alert =&gt; jsx(<span class="st">"p"</span>, <span class="kw">null</span>, alert.message))
+          )
+        ] : [
+          jsx(<span class="st">"p"</span>, { <span class="at">className</span>: <span class="st">"empty-state"</span> }, <span class="st">"No alerts — all clear."</span>)
+        ])
+      )
+    )
+  );
+});</pre>
 
-  <h3>Vite</h3>
-  <pre>// vite.config.ts
-import coffeehaml from 'coffeehaml/vite';
+  <!-- QUICK START -->
+  <h2 id="quick-start">Quick Start</h2>
 
-export default {
-  plugins: [coffeehaml()],
+  <h3>Scaffold a project <span class="badge badge-new">v0.6.0</span></h3>
+  <pre>$ <span class="op">npx coffeehaml init</span>
+
+  &#9749; CoffeeHaml init — project scaffold
+  Working directory: /my-react-app
+  Detected: package.json, Vite, TypeScript
+
+  Add coffeehaml as devDependency? <span class="op">(Y/n):</span>
+  Configure Vite plugin? <span class="op">(Y/n):</span>
+  Create sample .chaml component? <span class="op">(Y/n):</span>
+  Add build/watch scripts to package.json? <span class="op">(Y/n):</span></pre>
+
+  <h3>Or install manually</h3>
+  <pre>$ npm install coffeehaml</pre>
+
+  <div class="two-col">
+    <div>
+      <h3>Vite</h3>
+      <pre><span class="hl">// vite.config.ts</span>
+<span class="hl">import</span> coffeehaml <span class="hl">from</span> <span class="st">'coffeehaml/vite'</span>;
+
+<span class="hl">export default</span> {
+  <span class="at">plugins</span>: [coffeehaml()],
 };</pre>
+    </div>
+    <div>
+      <h3>CLI</h3>
+      <pre><span class="hl"># One-shot compile</span>
+$ npx coffeehaml compile app.chaml <span class="op">-o</span> app.js
 
-  <h3>CLI</h3>
-  <pre>npx coffeehaml compile app.coffeehaml</pre>
+<span class="hl"># Watch mode (v0.5.0)</span>
+$ npx coffeehaml watch src/ <span class="op">--wrap</span> component</pre>
+    </div>
+  </div>
 
-  <p style="margin-top:1.5rem;">
+  <p style="margin-top:0.5rem; color:var(--muted);">
     Supports <code>.chaml</code>, <code>.coffeehaml</code>, and <code>.cohaml</code> extensions.
-    Full documentation on <a href="https://github.com/dantiel/CoffeeHaml">GitHub</a>.
+  </p>
+
+  <!-- FEATURES -->
+  <h2>All Features</h2>
+
+  <table>
+    <tr><th>Feature</th><th>Status</th></tr>
+    <tr><td>Elements, components, implicit divs</td><td>&#10003;</td></tr>
+    <tr><td><code>.class</code> / <code>#id</code> shorthand</td><td>&#10003;</td></tr>
+    <tr><td><code>{attr: val}</code> + spread <code>{props...}</code></td><td>&#10003;</td></tr>
+    <tr><td>Inline <code>= expression</code> output</td><td>&#10003;</td></tr>
+    <tr><td><code>=</code> expression continuation <span class="badge badge-new">v0.5.0</span></td><td>&#10003;</td></tr>
+    <tr><td><code>= expr -&gt;</code> arrow continuation <span class="badge badge-new">v0.6.0</span></td><td>&#10003;</td></tr>
+    <tr><td><code>-</code> statement continuation <span class="badge">v0.4.2</span></td><td>&#10003;</td></tr>
+    <tr><td><code>- if</code> / <code>- unless</code> / <code>- else</code> / <code>- else if</code></td><td>&#10003;</td></tr>
+    <tr><td><code>- for item in items</code> → <code>.map()</code></td><td>&#10003;</td></tr>
+    <tr><td><code>- while</code> loops</td><td>&#10003;</td></tr>
+    <tr><td>Optional chaining <code>props.gyro?.roll</code></td><td>&#10003;</td></tr>
+    <tr><td>Haml / HTML comments</td><td>&#10003;</td></tr>
+    <tr><td><code>:filter</code> plugins (markdown, asciidoc)</td><td>&#10003;</td></tr>
+    <tr><td>Prologue passthrough (<code>import</code>, <code>@decorator</code>)</td><td>&#10003;</td></tr>
+    <tr><td>Component / HOC wrapping</td><td>&#10003;</td></tr>
+    <tr><td>Vite plugin (HMR + Fast Refresh <span class="badge badge-new">v0.6.0</span>)</td><td>&#10003;</td></tr>
+    <tr><td>CLI <code>--wrap</code> flag <span class="badge badge-new">v0.5.0</span></td><td>&#10003;</td></tr>
+    <tr><td>CLI <code>watch</code> mode <span class="badge badge-new">v0.5.0</span></td><td>&#10003;</td></tr>
+    <tr><td>CLI <code>init</code> scaffold <span class="badge badge-new">v0.6.0</span></td><td>&#10003;</td></tr>
+    <tr><td>Source-located error messages <span class="badge badge-new">v0.5.0</span></td><td>&#10003;</td></tr>
+    <tr><td>Multi-error parser recovery <span class="badge badge-new">v0.6.0</span></td><td>&#10003;</td></tr>
+    <tr><td>Source maps</td><td>&#10003;</td></tr>
+    <tr><td>CoffeeScript expression compilation</td><td>&#10003; (peer dep)</td></tr>
+  </table>
+
+  <!-- NODE API -->
+  <h2>Node API</h2>
+
+  <pre><span class="hl">import</span> { compile, compileFile } <span class="hl">from</span> <span class="st">'coffeehaml'</span>;
+
+<span class="kw">const</span> result = compile(<span class="st">'%div Hello'</span>, {
+  <span class="at">filename</span>: <span class="st">'app.chaml'</span>,
+  <span class="at">wrap</span>: <span class="st">'component'</span>,   <span class="hl">// 'none' | 'component' | 'observer' | string[]</span>
+  <span class="at">sourceMap</span>: <span class="kw">true</span>,
+});
+
+console.log(result.code);
+<span class="hl">// → import { jsx } from "react/jsx-runtime";</span>
+<span class="hl">//   export default function App(props) {</span>
+<span class="hl">//     return jsx("div", null, "Hello");</span>
+<span class="hl">//   }</span></pre>
+
+  <!-- DESIGN -->
+  <h2>Design Principles</h2>
+
+  <ul class="feature-grid">
+    <li><strong>Zero runtime</strong> — compiler is the only artifact</li>
+    <li><strong>CoffeeScript-centric</strong> — not a Ruby-Haml port; CoffeeScript's semantics, not Ruby's</li>
+    <li><strong>Emitter-agnostic AST</strong> — future backends (Solid, Vue, Mithril)</li>
+    <li><strong>Source-located errors</strong> — line/column hints on every failure</li>
+    <li><strong>Source maps</strong> — debug in <code>.chaml</code>, not generated JS</li>
+    <li><strong>Incremental compilation</strong> — Vite HMR + Fast Refresh</li>
+    <li><strong>Multi-error recovery</strong> — parser collects all errors, not just first</li>
+    <li><strong>No invention</strong> — reuse Haml and CoffeeScript conventions</li>
+  </ul>
+
+  <!-- DOCS -->
+  <h2>Documentation</h2>
+  <p>
+    <a href="grammar.md">Grammar Reference</a> &middot;
+    <a href="examples.md">Syntax Examples</a> &middot;
+    <a href="architecture.md">Architecture</a> &middot;
+    <a href="ast.md">AST Specification</a> &middot;
+    <a href="https://github.com/dantiel/CoffeeHaml">GitHub README</a>
   </p>
 
   <footer>
-    MIT License · Created by <a href="https://github.com/dantiel">dantiel</a><br>
-    CoffeeHaml replaces JSX — not React. No runtime. No framework. Just a compiler.
+    <strong>CoffeeHaml v0.6.0</strong> &mdash; MIT License &middot; Created by <a href="https://github.com/dantiel">dantiel</a><br>
+    Haml structure. CoffeeScript semantics. React runtime. Nothing more, nothing less.
   </footer>
+
 </body>
 </html>

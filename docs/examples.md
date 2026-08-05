@@ -371,6 +371,206 @@ Haml comments and their nested children are stripped entirely.
   init = ->
     console.log "ready"
   init()
+
+---
+
+## 11. Statement Continuation (v0.4.2)
+
+Indented children of `-` control blocks compile as continuation code lines.
+No more single-line straitjacket for complex logic:
+
+```haml
+- if user.role == 'admin' && user.permissions.includes('write')
+  %AdminPanel
+    %h2 Admin
+    %p Welcome back, = user.name
+```
+
+Multi-statement blocks:
+
+```haml
+- if results.length > 0
+  sorted = results.sort (a, b) -> b.score - a.score
+  topThree = sorted.slice 0, 3
+  %Results{ data: topThree }
+```
+
+Works with `for`, `while`, and bare statements too:
+
+```haml
+%div
+  - x = computeBaseValue()
+  - x *= multiplier
+  - x += offset
+  %p= x
+```
+
+---
+
+## 12. Expression Continuation (v0.5.0)
+
+Long inline expressions can break across indented continuation lines:
+
+```haml
+%h1= "Welcome, " +
+  user.firstName + " " +
+  user.lastName
+
+%div= someFunction(
+  arg1,
+  arg2,
+  arg3
+)
+```
+
+Indented TEXT children of `=` are joined into the expression before compilation:
+
+```haml
+%p= formatMessage(
+  user.name,
+  user.role,
+  if premium then "⭐" else ""
+)
+```
+
+---
+
+## 13. Arrow Continuation (v0.6.0)
+
+`=` with an arrow function can have indented element children — the elements
+become the arrow body's JSX:
+
+```haml
+%ul
+  = items.map (item) ->
+    %li{ key: item.id }
+      %span.icon= item.icon
+      %a{ href: item.url }= item.label
+```
+
+Compiles to:
+
+```js
+jsx("ul", null,
+  ...items.map(item => jsx("li", { key: item.id },
+    jsx("span", { className: "icon" }, item.icon),
+    jsx("a", { href: item.url }, item.label)
+  ))
+)
+```
+
+Works inline within elements too:
+
+```haml
+%Dashboard
+  = widgets.filter (w) -> w.active
+    .map (w) ->
+      %WidgetCard{ widget: w, key: w.id }
+```
+
+---
+
+## 14. CLI Init Scaffold (v0.6.0)
+
+Interactive project setup wizard:
+
+```bash
+$ npx coffeehaml init
+
+  ☕ CoffeeHaml init — project scaffold
+  Working directory: /my-react-app
+  Detected: package.json, Vite, TypeScript
+
+  Add coffeehaml as devDependency? (Y/n):
+  Configure Vite plugin? (Y/n):
+  Create sample .chaml component? (Y/n):
+  Add build/watch scripts to package.json? (Y/n):
+```
+
+Detects your project type, installs dependencies, patches Vite config,
+creates a sample component, and adds npm scripts — all interactive.
+
+---
+
+## 15. Watch Mode (v0.5.0)
+
+```bash
+# Watch and recompile on every change
+$ npx coffeehaml watch src/ --wrap component
+
+# With observer HOC wrapping
+$ npx coffeehaml watch src/ --wrap observer
+```
+
+Uses native `fs.watch` — zero dependencies. Recursively scans on startup,
+recompiles individual files on change.
+
+---
+
+## 16. HOC Wrapping (v0.4.0)
+
+Wrap components in higher-order functions:
+
+```haml
+-# With Vite plugin (default: component)
+-# Or via CLI / Node API:
+
+%div.page
+  %h1 Hello
+```
+
+```bash
+# Single HOC
+$ npx coffeehaml compile app.chaml --wrap observer
+# → export default observer(function App(props) { ... })
+
+# HOC chain
+$ npx coffeehaml compile app.chaml --wrap observer,memo,forwardRef
+# → export default observer(memo(forwardRef(function App(props) { ... })))
+```
+
+Node API:
+
+```js
+compile(source, { wrap: ['observer', 'memo'] })
+compile(source, { wrap: 'observer' })
+compile(source, { wrap: 'component' })  // plain component
+```
+
+---
+
+## 17. Multi-Error Parser Recovery (v0.6.0)
+
+The parser no longer stops at the first error. It collects all errors,
+recovers at structural boundaries, and returns a partial AST:
+
+```js
+const result = compile(brokenSource);
+console.log(result.errors);
+// [
+//   { message: "Unexpected token '}'", location: { line: 3, column: 12 } },
+//   { message: "Unclosed attribute block", location: { line: 7, column: 1 } },
+// ]
+```
+
+Errors carry source locations (line/column) for IDE integration and
+clickable terminal output.
+
+---
+
+## 18. Source-Located Errors (v0.5.0)
+
+All errors carry file, line, and column:
+
+```bash
+$ npx coffeehaml compile bad.chaml
+Error: bad.chaml:12:3 — Unexpected ')' in expression
+  %div{ onClick: -> handle() ) }
+                ^
+```
+
+CoffeeScript compile errors are wrapped with source location context,
+making it clear which `.chaml` line triggered the failure.
 ```
 
 ### Markdown (build-time)

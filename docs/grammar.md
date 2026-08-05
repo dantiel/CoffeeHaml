@@ -341,6 +341,95 @@ arr...
 "Hello, #{name}"
 
 // Heregex
+```
+
+---
+
+## Continuation (v0.4.2 / v0.5.0 / v0.6.0)
+
+CoffeeHaml supports three forms of indented continuation, extending the
+grammar beyond single-line constructs.
+
+### Statement Continuation (`-`, v0.4.2)
+
+```
+Statement      := '-' Whitespace CodeStatement Newline
+                  (Indent CodeLine+ Dedent)?
+
+CodeLine       := [^\\n]+ Newline
+                // Indented code lines concatenated to the primary statement.
+                // Enables multi-line CoffeeScript inside - blocks.
+```
+
+The indented lines are joined to the primary statement with newline
+separators before CoffeeScript compilation:
+
+```haml
+- x = computeValue()
+  x *= multiplier        # continuation
+  x += offset            # continuation
+%p= x
+```
+
+Compiles as a single CoffeeScript block: `x = computeValue(); x *= multiplier; x += offset`.
+
+### Expression Continuation (`=`, v0.5.0)
+
+```
+Output         := '=' Whitespace Expression Newline
+                  (Indent TextLine+ Dedent)?
+
+TextLine       := [^\\n]+ Newline
+                // TEXT children of = outputs are joined to the expression.
+```
+
+Indented TEXT children of `=` outputs are concatenated into the expression:
+
+```haml
+%h1= "Hello, " +
+  user.firstName +
+  " " +
+  user.lastName
+```
+
+### Arrow Continuation (`= expr ->`, v0.6.0)
+
+```
+ArrowOutput    := '=' Whitespace Expression ArrowSuffix Newline
+                  (Indent Node+ Dedent)?
+
+ArrowSuffix    := '->' | '=>' Arguments?
+                // Detected after CoffeeScript expression parsing.
+                // Triggers element-body mode for indented children.
+```
+
+When `=` is followed by an expression ending in a CoffeeScript arrow
+(`->` or `=>`), the indented children become the arrow body — compiled
+as JSX elements within the arrow function:
+
+```haml
+= items.map (item) ->
+  %li{ key: item.id }
+    %span= item.label
+```
+
+Compiles to:
+
+```js
+items.map(item => jsx("li", { key: item.id },
+  jsx("span", null, item.label)
+))
+```
+
+This works both at the module level (`emitOutput`) and inline within
+elements (`emitChildToJs`), enabling functional mapping with full element
+syntax in both positions.
+
+### Continuation Precedence
+
+1. Arrow continuation takes priority — if the expression ends with `->` or `=>`, children are treated as the arrow body.
+2. Otherwise, TEXT children are joined as expression continuations (for multi-line expressions).
+3. Statement continuations are always code lines, joined before CoffeeScript compilation.
 /// pattern /g
 
 // Destructuring
