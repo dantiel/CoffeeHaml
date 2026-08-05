@@ -79,8 +79,18 @@ expressions like `{onClick: handler}` or `{disabled: !connected}`).
 ### CLI
 
 ```bash
-npx coffeehaml compile app.coffeehaml
+# One-shot compile
+npx coffeehaml compile app.chaml -o app.js --wrap component
+
+# Watch mode — recompiles on every change
+npx coffeehaml watch src/ --wrap observer
 ```
+
+| Flag | Description |
+|------|-------------|
+| `-o`, `--output` | Write output to file |
+| `--source-map` | Emit inline source map |
+| `--wrap <mode>` | Wrap mode: `component`, `observer`, or comma-separated HOC list |
 
 Accepts `.coffeehaml`, `.cohaml`, and `.chaml` extensions.
 
@@ -120,8 +130,9 @@ console.log(result.code);
 | `#id` | Element ID |
 | `{attr: val}` / `(attr: val)` | Attributes (CoffeeScript expressions) |
 | `{onClick}` | Shorthand — `onClick={onClick}` |
-| `= expression` | Inline output (escaped) |
+| `= expression` | Inline output (escaped); continuation via indented lines |
 | `- if`, `- unless` | Conditional |
+| `- code` | Arbitrary CoffeeScript statements; continuation via indented lines |
 | `- for x in xs` | Loop → `.map()` |
 | `- else`, `- else if` | Chain conditionals |
 | `-# comment` | Haml comment (stripped) |
@@ -136,7 +147,8 @@ Full grammar: [`docs/grammar.md`](docs/grammar.md)
 
 - **Zero runtime** — the compiler is the only artifact
 - **Emitter-agnostic AST** — future backends possible (Solid, Vue, Mithril)
-- **Excellent source maps** — debug in CoffeeHaml, not generated JS
+- **Source-located errors** — line/column hints for every compile failure
+- **Source maps** — debug in CoffeeHaml, not generated JS
 - **Incremental compilation** — Vite HMR out of the box
 - **No invention** — reuse Haml and CoffeeScript conventions
 
@@ -144,24 +156,31 @@ Full grammar: [`docs/grammar.md`](docs/grammar.md)
 
 ## Status
 
-**v0.1.0 — experimental.** The core compiler pipeline (Lexer → Parser →
-Emitter) is functional. Source maps and CoffeeScript expression compilation
-require the `coffeescript` peer dependency.
+**v0.5.0 — production beta.** The compiler pipeline (Lexer → Parser → Emitter)
+is complete. Source maps, component wrapping, spread attributes, statement/expression
+continuation, and source-located errors are all functional.
 
 | Feature | Status |
 |---------|--------|
 | Elements, components, implicit divs | ✅ |
 | `.class` / `#id` modifiers | ✅ |
-| `{attr: val}` / `(attr: val)` blocks | ✅ |
+| `{attr: val}` / `(attr: val)` + spread `{props...}` | ✅ |
 | Inline `= expression` output | ✅ |
+| `=` expression continuation (indented) | ✅ |
+| `-` statement continuation (indented) | ✅ |
 | `- if` / `- unless` / `- else` / `- else if` | ✅ |
 | `- for item in items` → `.map()` | ✅ |
 | `- while` | ✅ |
 | Haml/HTML comments | ✅ |
 | `:filter` blocks | ✅ |
+| Prologue passthrough (`import`, `@decorator`) | ✅ |
+| Component / HOC wrapping (`wrap: 'observer'`) | ✅ |
 | Vite plugin with HMR | ✅ |
-| Source maps | 🚧 Stubbed |
-| CoffeeScript expression compilation | 🚧 Requires peer dep |
+| CLI `--wrap` flag | ✅ |
+| CLI `watch` mode | ✅ |
+| Source-located error messages | ✅ |
+| Source maps | ✅ |
+| CoffeeScript expression compilation | ✅ (requires peer dep) |
 | React Fast Refresh | 📅 Planned |
 
 ---

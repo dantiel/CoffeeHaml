@@ -250,7 +250,16 @@ function parseOutput(state: ParserState): Output {
   const outputKind: OutputKind = token.type === TokenType.OUTPUT ? 'escaped' : 'unescaped';
   state.advance();
   const expr = new Expression(token.value, undefined);
-  return new Output(expr, outputKind, token.location);
+
+  // Parse continuation children if INDENT follows
+  let children: Node[] = [];
+  if (state.current?.type === TokenType.INDENT) {
+    state.advance();
+    children = parseBlock(state);
+    state.expect(TokenType.DEDENT);
+  }
+
+  return new Output(expr, outputKind, token.location, children);
 }
 
 // ─── Control Flow ──────────────────────────────────────────

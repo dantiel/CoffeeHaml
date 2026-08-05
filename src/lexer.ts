@@ -41,6 +41,7 @@ export function tokenize(source: string, filename?: string): Token[] {
   const indentStack: number[] = [0]; // level 0 is always on the stack
 
   let offset = 0;
+  let lineIndex = 0;
   let inPrologue = true; // true until first HAML construct encountered
 
   for (const rawLine of lines) {
@@ -50,6 +51,7 @@ export function tokenize(source: string, filename?: string): Token[] {
     // Skip empty lines (but preserve their space for offset tracking)
     if (line.trim() === '') {
       offset += lineLength;
+      lineIndex++;
       continue;
     }
 
@@ -59,6 +61,7 @@ export function tokenize(source: string, filename?: string): Token[] {
     // Skip blank lines
     if (content === '') {
       offset += lineLength;
+      lineIndex++;
       continue;
     }
 
@@ -68,14 +71,15 @@ export function tokenize(source: string, filename?: string): Token[] {
         type: TokenType.PROLOGUE,
         value: content,
         location: {
-          start: { line: 0, column: offset + indent },
-          end: { line: 0, column: offset + indent + content.length },
+          start: { line: lineIndex, column: indent },
+          end: { line: lineIndex, column: indent + content.length },
           offset: offset + indent,
           length: lineLength - indent,
           file: filename,
         },
       });
       offset += lineLength;
+      lineIndex++;
       continue;
     }
     inPrologue = false; // first HAML construct or indented line locks us out of prologue
@@ -85,31 +89,32 @@ export function tokenize(source: string, filename?: string): Token[] {
 
     if (indent > currentIndent) {
       indentStack.push(indent);
-      tokens.push(indentToken(indent, offset, indent, filename));
+      tokens.push(indentToken(indent, offset, indent, filename, lineIndex));
     } else if (indent < currentIndent) {
       while (indentStack.length > 1 && indent < indentStack[indentStack.length - 1]) {
         indentStack.pop();
-        tokens.push(dedentToken(offset, filename));
+        tokens.push(dedentToken(offset, filename, lineIndex));
       }
       if (indent !== indentStack[indentStack.length - 1]) {
         // Misaligned indent — still emit what we can
         indentStack.push(indent);
-        tokens.push(indentToken(indent, offset, indent, filename));
+        tokens.push(indentToken(indent, offset, indent, filename, lineIndex));
       }
     }
 
     // Parse the line content
     const lineStartOffset = offset + indent;
-    const lineTokens = tokenizeLine(content, lineStartOffset, lineLength - indent, filename);
+    const lineTokens = tokenizeLine(content, lineStartOffset, lineLength - indent, filename, lineIndex);
     tokens.push(...lineTokens);
 
     offset += lineLength;
+    lineIndex++;
   }
 
   // Emit remaining DEDENT tokens at EOF
   while (indentStack.length > 1) {
     indentStack.pop();
-    tokens.push(dedentToken(offset, filename));
+    tokens.push(dedentToken(offset, filename, lineIndex));
   }
 
   return tokens;
@@ -121,15 +126,16 @@ function tokenizeLine(
   content: string,
   lineStartOffset: number,
   _lineLength: number,
-  filename?: string
+  filename?: string,
+  lineIndex?: number
 ): Token[] {
   const tokens: Token[] = [];
   let pos = 0;
 
   function loc(start: number, end: number): SourceLocation {
     return {
-      start: { line: 0, column: lineStartOffset + start }, // line filled by tokenize() context
-      end: { line: 0, column: lineStartOffset + end },
+      start: { line: lineIndex ?? 0, column: lineStartOffset + start },
+      end: { line: lineIndex ?? 0, column: lineStartOffset + end },
       offset: lineStartOffset + start,
       length: end - start,
       file: filename,
@@ -156,7 +162,7 @@ function tokenizeLine(
     }
 
     // Parse modifiers and attributes on the rest of the line
-    const modResult = parseModifiersAndAttrs(content, pos, lineStartOffset, filename);
+    const modResult = parseModifiersAndAttrs(content, pos, lineStartOffset, filename, lineIndex);
     tokens.push(...modResult.tokens);
     pos = modResult.pos;
 
@@ -185,7 +191,7 @@ function tokenizeLine(
   // This prevents `# Hello` (Markdown heading) or `. something` from being
   // mistakenly parsed as modifiers inside filter blocks.
   if ((firstChar === '.' || firstChar === '#') && /^[.#][\w-]/.test(content)) {
-    const modResult = parseModifiersAndAttrs(content, 0, lineStartOffset, filename);
+    const modResult = parseModifiersAndAttrs(content, 0, lineStartOffset, filename, lineIndex);
     tokens.push(...modResult.tokens);
     let pos = modResult.pos;
 
@@ -261,15 +267,16 @@ function parseModifiersAndAttrs(
   content: string,
   startPos: number,
   lineStartOffset: number,
-  filename?: string
+  filename?: string,
+  lineIndex?: number
 ): { tokens: Token[]; pos: number } {
   const tokens: Token[] = [];
   let pos = startPos;
 
   function loc(start: number, end: number): SourceLocation {
     return {
-      start: { line: 0, column: lineStartOffset + start },
-      end: { line: 0, column: lineStartOffset + end },
+      start: { line: lineIndex ?? 0, column: lineStartOffset + start },
+      end: { line: lineIndex ?? 0, column: lineStartOffset + end },
       offset: lineStartOffset + start,
       length: end - start,
       file: filename,
@@ -364,14 +371,14 @@ function countIndent(line: string): number {
   return count;
 }
 
-function indentToken(_indent: number, offset: number, level: number, filename?: string): Token {
+function indentToken(_indent: number, offset: number, level: number, filename?: string, line?: number): Token {
   return {
     type: TokenType.INDENT,
     value: '',
     indent: level,
     location: {
-      start: { line: 0, column: 0 },
-      end: { line: 0, column: 0 },
+      start: { line: line ?? 0, column: 0 },
+      end: { line: line ?? 0, column: 0 },
       offset,
       length: 0,
       file: filename,
@@ -379,14 +386,14 @@ function indentToken(_indent: number, offset: number, level: number, filename?: 
   };
 }
 
-function dedentToken(offset: number, filename?: string): Token {
+function dedentToken(offset: number, filename?: string, line?: number): Token {
   return {
     type: TokenType.DEDENT,
     value: '',
     indent: undefined,
     location: {
-      start: { line: 0, column: 0 },
-      end: { line: 0, column: 0 },
+      start: { line: line ?? 0, column: 0 },
+      end: { line: line ?? 0, column: 0 },
       offset,
       length: 0,
       file: filename,

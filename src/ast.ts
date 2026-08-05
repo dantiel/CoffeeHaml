@@ -157,11 +157,14 @@ export class Output extends Node {
   readonly kind = 'Output' as const;
   readonly expression: Expression;
   readonly outputKind: OutputKind;
+  /** Indented continuation children (TEXT = code continuation, others = nested elements). */
+  readonly children: Node[];
 
-  constructor(expression: Expression, outputKind: OutputKind, location?: SourceLocation) {
+  constructor(expression: Expression, outputKind: OutputKind, location?: SourceLocation, children: Node[] = []) {
     super(location);
     this.expression = expression;
     this.outputKind = outputKind;
+    this.children = children;
   }
 }
 

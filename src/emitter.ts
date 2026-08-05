@@ -245,7 +245,7 @@ function emitElement(el: Element, state: EmitState): void {
 
 function tagToJs(el: Element): string {
   if (el.tag instanceof Expression) {
-    return compileExpression(el.tag);
+    return compileExpression(el.tag, el.location);
   }
   if (el.isComponent) {
     return el.tag;
@@ -354,7 +354,7 @@ function emitChildToJs(node: Node, state: EmitState): string {
     return escapeString(node.value);
   }
   if (node instanceof Output) {
-    return compileExpression(node.expression);
+    return compileExpression(node.expression, node.location);
   }
   if (node instanceof Element) {
     const hasChildren = node.children.length > 0;
@@ -415,14 +415,14 @@ function emitControlFlow(
 /** Emit an arbitrary CoffeeScript statement (- code). */
 function emitStatement(cf: ControlFlow, remaining: Node[], state: EmitState): void {
   // Compile as statement, preserving var→const declarations
-  const js = compileStatement(cf.expression.source.trim());
+  const js = compileStatement(cf.expression.source.trim(), cf.location);
 
   // Indented children without a '-' prefix are code continuation lines
   // (lexed as TEXT) or nested HAML elements
   const stmts: string[] = [js];
   for (const child of cf.children) {
     if (child instanceof Text) {
-      stmts.push(compileStatement(child.value));
+      stmts.push(compileStatement(child.value, child.location));
     } else {
       emitNode(child, state, false);
     }
@@ -451,7 +451,7 @@ function emitLoop(cf: ControlFlow, remaining: Node[], state: EmitState): void {
       const vars = forMatch[1].trim(); // e.g., "item" or "item, index"
       const iterable = forMatch[2].trim();
 
-      state.emit(`(${compileExpression(new Expression(iterable))}).map((${vars}) => `);
+      state.emit(`(${compileExpression(new Expression(iterable), cf.location)}).map((${vars}) => `);
 
       // Wrap children in Fragment if multiple
       if (cf.children.length === 0) {
@@ -481,7 +481,7 @@ function emitLoop(cf: ControlFlow, remaining: Node[], state: EmitState): void {
   }
 
   if (cf.controlKind === 'while') {
-    const cond = compileExpression(cf.expression);
+    const cond = compileExpression(cf.expression, cf.location);
     state.emitLine(`(() => {`);
     state.indentBlock(() => {
       state.emitLine(`const __result = [];`);
@@ -518,7 +518,7 @@ function emitConditional(cf: ControlFlow, remaining: Node[], state: EmitState): 
   }
 
   // Build ternary chain: cond ? jsx(...) : (elseCond ? jsx(...) : null)
-  const condition = compileExpression(cf.expression);
+  const condition = compileExpression(cf.expression, cf.location);
 
   if (cf.controlKind === 'unless') {
     // unless cond → !(cond)
@@ -573,7 +573,7 @@ function emitControlFlowToJs(cf: ControlFlow, state: EmitState): string {
     if (forMatch) {
       const vars = forMatch[1].trim();
       const iterable = forMatch[2].trim();
-      const compiledIterable = compileExpression(new Expression(iterable));
+      const compiledIterable = compileExpression(new Expression(iterable), cf.location);
       const body = cf.children.length === 1
         ? emitChildToJs(cf.children[0], state)
         : `jsxs(Fragment, { children: [${cf.children.map(c => emitChildToJs(c, state)).join(', ')}] })`;
@@ -591,7 +591,7 @@ function emitControlFlowToJs(cf: ControlFlow, state: EmitState): string {
   }
 
   if (cf.isConditional) {
-    const condition = compileExpression(cf.expression);
+    const condition = compileExpression(cf.expression, cf.location);
     const condExpr = cf.controlKind === 'unless' ? `!(${condition})` : condition;
     const consequent = cf.children.length === 1
       ? emitChildToJs(cf.children[0], state)
@@ -604,7 +604,7 @@ function emitControlFlowToJs(cf: ControlFlow, state: EmitState): string {
 
   if (cf.controlKind === 'statement') {
     // Inline statements can't be used as JSX children — pass through as comment
-    const js = compileExpression(cf.expression);
+    const js = compileExpression(cf.expression, cf.location);
     return `/* - ${js} */ null`;
   }
 
@@ -619,12 +619,41 @@ function emitText(text: Text, state: EmitState): void {
 }
 
 function emitOutput(out: Output, state: EmitState): void {
-  const js = compileExpression(out.expression);
+  // Separate continuation children into TEXT (code lines to join) and elements
+  const textLines: string[] = [];
+  const elementChildren: Node[] = [];
+
+  for (const child of out.children) {
+    if (child instanceof Text) {
+      textLines.push(child.value);
+    } else {
+      elementChildren.push(child);
+    }
+  }
+
+  // Build the full expression source, joining TEXT continuation lines
+  let exprSource = out.expression.source;
+  if (textLines.length > 0) {
+    exprSource = [exprSource, ...textLines].join(' ');
+  }
+
+  const js = compileExpression(new Expression(exprSource), out.location);
+  let result: string;
   if (out.outputKind === 'escaped') {
-    // React handles escaping via jsx text children
-    state.emitLine(`jsx(Fragment, { children: ${js} });`);
+    result = `jsx(Fragment, { children: ${js} })`;
   } else {
-    state.emitLine(`jsx(Fragment, {}, ${js});`);
+    result = `jsx(Fragment, {}, ${js})`;
+  }
+
+  // Emit nested element children after the expression
+  for (const child of elementChildren) {
+    emitNode(child, state, false);
+  }
+
+  if (state.directEmit) {
+    state.emitLine(result + ';');
+  } else {
+    state.emitLine(result + ';');
   }
 }
 

@@ -1,5 +1,6 @@
 import { createRequire } from 'module';
 import { Expression } from './ast.js';
+import { SourceLocation, CompileError } from './types.js';
 
 // ESM-safe CoffeeScript loader — uses createRequire for projects with "type": "module"
 const _require = createRequire(import.meta.url);
@@ -65,8 +66,9 @@ export function parseExpression(source: string): Expression {
 
 /** Compile a CoffeeScript expression to JavaScript.
  *  If no parsed AST, compiles from source directly.
- *  Returns the source as-is if compilation fails. */
-export function compileExpression(expr: Expression): string {
+ *  Returns the source as-is if compilation fails.
+ *  @param location Source location for error context. */
+export function compileExpression(expr: Expression, location?: SourceLocation): string {
   if (expr.source.trim() === '') return '';
 
   try {
@@ -79,8 +81,18 @@ export function compileExpression(expr: Expression): string {
       // CoffeeScript.compile wraps result in an IIFE or adds var — strip to get expression
       return stripCoffeeWrapper(js, expr.source);
     }
-  } catch {
-    // Fall through
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (location) {
+      throw new CompileError(
+        `CoffeeScript expression error: ${msg}`,
+        'emitter',
+        'EXPRESSION_ERROR',
+        location,
+        `Check expression: ${expr.source.slice(0, 80)}`
+      );
+    }
+    // Without location, return raw source with warning
   }
 
   return expr.source;
@@ -122,8 +134,9 @@ function stripCoffeeWrapper(js: string, _original: string): string {
 /** Compile a CoffeeScript statement, preserving variable declarations.
  *  CoffeeScript.compile('sim = useSimulation()', {bare: true}) → "var sim;\n\nsim = useSimulation();\n"
  *  We want: "const sim = useSimulation();"
- *  Multi-var: "var a, b; a = 1; b = 2;" → "let a = 1; let b = 2;" */
-export function compileStatement(source: string): string {
+ *  Multi-var: "var a, b; a = 1; b = 2;" → "let a = 1; let b = 2;"
+ *  @param location Source location for error context. */
+export function compileStatement(source: string, location?: SourceLocation): string {
   try {
     const CoffeeScript = loadCoffeeScript();
     if (CoffeeScript && typeof CoffeeScript.compile === 'function') {
@@ -133,7 +146,19 @@ export function compileStatement(source: string): string {
       });
       return stripToConst(js.trim());
     }
-  } catch { /* fall through */ }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (location) {
+      throw new CompileError(
+        `CoffeeScript compilation error: ${msg}`,
+        'emitter',
+        'COMPILE_ERROR',
+        location,
+        `Check statement: ${source.slice(0, 80)}`
+      );
+    }
+    // Without location, fall through to raw passthrough
+  }
   return source;
 }
 
