@@ -1,6 +1,6 @@
 {
   "name": "coffeehaml",
-  "version": "0.4.0",
+  "version": "0.4.2",
   "description": "Haml structure. CoffeeScript semantics. React runtime. Zero runtime. Vite-native.",
   "type": "module",
   "license": "MIT",
@@ -30,10 +30,35 @@
   },
   "files": [
     "dist",
+    "syntaxes",
+    "language-configuration.json",
     "README.md",
     "LICENSE",
     "docs"
   ],
+  "contributes": {
+    "grammars": [
+      {
+        "language": "coffeehaml",
+        "scopeName": "source.coffeehaml",
+        "path": "./syntaxes/coffeehaml.tmLanguage.json"
+      }
+    ],
+    "languages": [
+      {
+        "id": "coffeehaml",
+        "aliases": [
+          "CoffeeHaml",
+          "coffeehaml"
+        ],
+        "extensions": [
+          ".chaml",
+          ".coffeehaml"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ]
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

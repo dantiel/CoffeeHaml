@@ -311,7 +311,7 @@ function stripControlKeyword(source: string, kind: ControlFlowKind): string {
   }
   // Remove the keyword and any whitespace after it
   const keyword = kind === 'else' ? 'else' : kind;
-  const re = new RegExp(`^\\\\s*${keyword}\\\\b\\\\s*`);
+  const re = new RegExp("^\\s*" + keyword + "\\b\\s*");
   return trimmed.replace(re, '');
 }
 
