@@ -825,6 +825,11 @@
 					<key>name</key>
 					<string>punctuation.definition.tag.coffeehaml</string>
 				</dict>
+				<key>3</key>
+				<dict>
+					<key>name</key>
+					<string>entity.name.tag.coffeehaml</string>
+				</dict>
 			</dict>
 			<key>end</key>
 			<string>$</string>

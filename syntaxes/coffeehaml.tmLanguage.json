@@ -75,7 +75,8 @@
       "name": "meta.tag.implicit.coffeehaml",
       "begin": "^(\\s*)([.#])([\\w-]+)",
       "beginCaptures": {
-        "2": { "name": "punctuation.definition.tag.coffeehaml" }
+        "2": { "name": "punctuation.definition.tag.coffeehaml" },
+        "3": { "name": "entity.name.tag.coffeehaml" }
       },
       "end": "$",
       "patterns": [
