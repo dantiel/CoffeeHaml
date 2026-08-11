@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>uuid</key>
+	<string>8F3A1D42-6C9E-4A5B-B8D2-1E7C9F3A5B82</string>
+	<key>name</key>
+	<string>Compile and Preview JSX</string>
+	<key>command</key>
+	<string>#!/bin/bash
+DOC="$TM_FILEPATH"
+PROJ_DIR="${TM_PROJECT_DIRECTORY:-$PWD}"
+export PATH="$PROJ_DIR/node_modules/.bin:$PATH"
+
+# Compile and capture output
+OUTPUT=$(coffeehaml compile "$DOC" 2>&amp;1)
+RC=$?
+
+echo "&lt;style&gt;body { font: 13px Menlo, Monaco, monospace; padding: 12px; background: #1e1e1e; color: #d4d4d4; } h2 { font-size: 14px; margin: 0 0 8px; } pre { padding: 10px; background: #252526; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; } .err { color: #f48771; } .ok { color: #89d185; }&lt;/style&gt;"
+
+if [ $RC -eq 0 ]; then
+  echo "&lt;h2 class='ok'&gt;☕ Compiled: $TM_FILENAME&lt;/h2&gt;"
+  echo "&lt;pre&gt;"
+  echo "$OUTPUT" | sed 's/&amp;/\&amp;amp;/g; s/&lt;/\&amp;lt;/g; s/&gt;/\&amp;gt;/g'
+  echo "&lt;/pre&gt;"
+else
+  echo "&lt;h2 class='err'&gt;❌ Compilation Failed&lt;/h2&gt;"
+  echo "&lt;pre class='err'&gt;"
+  echo "$OUTPUT" | sed 's/&amp;/\&amp;amp;/g; s/&lt;/\&amp;lt;/g; s/&gt;/\&amp;gt;/g'
+  echo "&lt;/pre&gt;"
+fi</string>
+	<key>input</key>
+	<string>none</string>
+	<key>output</key>
+	<string>showAsHTML</string>
+	<key>keyEquivalent</key>
+	<string>^@P</string>
+	<key>scope</key>
+	<string>source.coffeehaml</string>
+</dict>
+</plist>

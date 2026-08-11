@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>uuid</key>
+	<string>4D2E7A19-3B5F-48C1-A6D9-2F8E1B4C7A93</string>
+	<key>name</key>
+	<string>Compile and Copy to Clipboard</string>
+	<key>command</key>
+	<string>#!/bin/bash
+DOC="$TM_FILEPATH"
+PROJ_DIR="${TM_PROJECT_DIRECTORY:-$PWD}"
+export PATH="$PROJ_DIR/node_modules/.bin:$PATH"
+
+OUTPUT=$(coffeehaml compile "$DOC" 2>&amp;1)
+RC=$?
+
+if [ $RC -eq 0 ]; then
+  echo -n "$OUTPUT" | pbcopy
+  echo "☕ JSX copied to clipboard ($(echo "$OUTPUT" | wc -l | tr -d ' ') lines)"
+else
+  echo "❌ Compilation failed:"
+  echo "$OUTPUT" >&amp;2
+fi</string>
+	<key>input</key>
+	<string>none</string>
+	<key>output</key>
+	<string>showAsTooltip</string>
+	<key>scope</key>
+	<string>source.coffeehaml</string>
+</dict>
+</plist>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>contactName</key>
+	<string>Daniel Tiel</string>
+	<key>description</key>
+	<string>CoffeeHaml — HAML structure, CoffeeScript semantics, React runtime. Syntax highlighting, formatting (Prettier), compilation, and project scaffolding.</string>
+	<key>name</key>
+	<string>CoffeeHaml</string>
+	<key>uuid</key>
+	<string>4825C220-02BA-4C19-B1DB-4B7787177563</string>
+	<key>ordering</key>
+	<array>
+		<string>2E4A4F36-269F-4031-A9BF-1F568EBAEE41</string>
+		<string>C6FDD162-0D27-49C7-AD4B-A9A9DA92C492</string>
+		<string>8F3A1D42-6C9E-4A5B-B8D2-1E7C9F3A5B82</string>
+		<string>4D2E7A19-3B5F-48C1-A6D9-2F8E1B4C7A93</string>
+		<string>1B4C19CF-7E92-4B97-9D5F-2F5C4F3A8B61</string>
+	</array>
+</dict>
+</plist>

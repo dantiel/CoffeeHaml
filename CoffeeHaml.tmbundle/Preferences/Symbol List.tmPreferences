@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>uuid</key>
+	<string>7F4A9C2D-5B1E-4A8F-9C3D-6E2B7A1F5C98</string>
+	<key>name</key>
+	<string>Symbol List</string>
+	<key>scope</key>
+	<string>source.coffeehaml</string>
+	<key>settings</key>
+	<dict>
+		<key>showInSymbolList</key>
+		<integer>1</integer>
+		<key>symbolTransformation</key>
+		<string>
+			s/^\s*%([\w-]+).*/$1/;           # %element name
+			s/^\s*\.([\w-]+).*/.$1/;         # .class
+			s/^\s*#([\w-]+).*/#$1/;          # #id
+			s/^\s*- (if|unless|for|while)\s+(.*)/$1 $2/;  # control flow
+			s/^\s*=\s*(.*)/= $1/;            # output
+		</string>
+	</dict>
+</dict>
+</plist>

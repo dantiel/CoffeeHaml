@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>uuid</key>
+	<string>5E3B8F2A-9C1D-4A7E-B6F8-3D2A9C5E1B74</string>
+	<key>name</key>
+	<string>Indentation</string>
+	<key>scope</key>
+	<string>source.coffeehaml</string>
+	<key>settings</key>
+	<dict>
+		<key>decreaseIndentPattern</key>
+		<string>^[^%\s\.#\-=/:]|^\s*$</string>
+		<key>increaseIndentPattern</key>
+		<string>^(\s*)(%[\w-]+|\.[\w-]+|#[\w-]+|- (?:if|unless|for|while|else)\b|- (?!\s*#|else)|:\w+|/)\b(?!.*=\s*$)</string>
+		<key>softTabs</key>
+		<true/>
+		<key>tabSize</key>
+		<integer>2</integer>
+	</dict>
+</dict>
+</plist>

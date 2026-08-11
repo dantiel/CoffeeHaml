@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>uuid</key>
+	<string>9A5D3E71-8F2B-4C6A-9D1E-3B7F2A5C8E94</string>
+	<key>name</key>
+	<string>React Component (ch-comp)</string>
+	<key>content</key>
+	<string>%${1:div}{ ${2:className}: ${3:true} }
+  ${4:= "Hello"}
+</string>
+	<key>scope</key>
+	<string>source.coffeehaml</string>
+	<key>tabTrigger</key>
+	<string>cdiv</string>
+</dict>
+</plist>

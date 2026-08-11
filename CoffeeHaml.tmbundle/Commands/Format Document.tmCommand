@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>uuid</key>
+	<string>2E4A4F36-269F-4031-A9BF-1F568EBAEE41</string>
+	<key>name</key>
+	<string>Format Document</string>
+	<key>command</key>
+	<string>#!/bin/bash
+# CoffeeHaml Format — format document with Prettier
+DOC="$TM_FILEPATH"
+PROJ_DIR="${TM_PROJECT_DIRECTORY:-$PWD}"
+
+# Resolve coffeehaml package path for the Prettier plugin
+COFFEEHAML_PKG=$(node -e "
+try {
+  const p = require('path');
+  const local = p.join('$PROJ_DIR', 'node_modules', 'coffeehaml');
+  const fs = require('fs');
+  if (fs.existsSync(local)) { console.log(local); process.exit(0); }
+  console.log(require.resolve('coffeehaml/package.json').replace('/package.json',''));
+} catch(e) { console.log(''); }
+" 2>/dev/null)
+
+if [ -z "$COFFEEHAML_PKG" ]; then
+  echo "⚠️  coffeehaml not found in node_modules" >&amp;2
+  cat
+  exit 0
+fi
+
+format_with() {
+  "$1" --stdin-filepath "$DOC" \
+    --parser coffeehaml \
+    --plugin "$COFFEEHAML_PKG/dist/prettier/index.js" 2>/dev/null
+}
+
+LOCAL_PRETTIER="$PROJ_DIR/node_modules/.bin/prettier"
+GLOBAL_PRETTIER=$(which prettier 2>/dev/null)
+
+if [ -x "$LOCAL_PRETTIER" ]; then
+  format_with "$LOCAL_PRETTIER" || cat
+elif [ -n "$GLOBAL_PRETTIER" ]; then
+  format_with "$GLOBAL_PRETTIER" || cat
+else
+  npx --no-install prettier --stdin-filepath "$DOC" \
+    --parser coffeehaml \
+    --plugin "$COFFEEHAML_PKG/dist/prettier/index.js" 2>/dev/null || cat
+fi</string>
+	<key>input</key>
+	<string>document</string>
+	<key>output</key>
+	<string>replaceDocument</string>
+	<key>keyEquivalent</key>
+	<string>^~F</string>
+	<key>scope</key>
+	<string>source.coffeehaml</string>
+</dict>
+</plist>

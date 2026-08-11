@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>uuid</key>
+	<string>D1C8A3F5-7E2B-4A9C-8D6F-2E5B7C1A9D83</string>
+	<key>name</key>
+	<string>for loop</string>
+	<key>content</key>
+	<string>- for ${1:item} in ${2:items}
+  %${3:div}{ key: $1.id }
+    = $1.name</string>
+	<key>scope</key>
+	<string>source.coffeehaml</string>
+	<key>tabTrigger</key>
+	<string>cfor</string>
+</dict>
+</plist>

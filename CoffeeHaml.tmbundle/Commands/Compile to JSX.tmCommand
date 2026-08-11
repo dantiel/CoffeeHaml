@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>uuid</key>
+	<string>C6FDD162-0D27-49C7-AD4B-A9A9DA92C492</string>
+	<key>name</key>
+	<string>Compile to JSX</string>
+	<key>command</key>
+	<string>#!/bin/bash
+DOC="$TM_FILEPATH"
+BASE="${DOC%.*}"
+OUTPUT="${BASE}.jsx"
+PROJ_DIR="${TM_PROJECT_DIRECTORY:-$PWD}"
+
+# Prepend local node_modules/.bin to PATH
+export PATH="$PROJ_DIR/node_modules/.bin:$PATH"
+
+# Run coffeehaml compile
+coffeehaml compile "$DOC" -o "$OUTPUT" 2>&amp;1
+RC=$?
+
+if [ $RC -eq 0 ]; then
+  echo "&lt;h2&gt;☕ Compiled&lt;/h2&gt;"
+  echo "&lt;p&gt;&lt;code&gt;$TM_FILENAME&lt;/code&gt; → &lt;code&gt;$(basename "$OUTPUT")&lt;/code&gt;&lt;/p&gt;"
+else
+  echo "&lt;h2 style='color:red'&gt;❌ Compilation Failed&lt;/h2&gt;"
+  exit 0  # Don't beep — errors shown in output
+fi</string>
+	<key>input</key>
+	<string>none</string>
+	<key>output</key>
+	<string>showAsHTML</string>
+	<key>keyEquivalent</key>
+	<string>^@B</string>
+	<key>scope</key>
+	<string>source.coffeehaml</string>
+</dict>
+</plist>
