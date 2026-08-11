@@ -278,6 +278,7 @@
         { "include": "#coffee-comment" },
         { "include": "#coffee-bracket" },
         { "include": "#coffee-splat" },
+        { "include": "#coffee-import-keyword" },
         { "include": "#coffee-variable" }
       ]
     },
@@ -376,7 +377,7 @@
 
     "coffee-operator": {
       "name": "keyword.operator.coffeehaml",
-      "match": "\\b(and|or|not|is|isnt|instanceof|typeof|new|delete|of|in|then|when|do|by|own|unless|loop|break|continue|return|yield|await|throw|try|catch|finally|class|extends|super|import|export|default|from|as)\\b|(\\?\\?|\\.\\.\\.|\\?\\=|\\.\\.|\\?\\.?|:{2,3}|\\|\\||&&|[<>=!]==?|[-+*/%&|^~]=?|[<>=!]=|[-+*/%&|^~<>]=?)"
+      "match": "\\b(and|or|not|is|isnt|instanceof|typeof|new|delete|of|in|then|when|do|by|own|unless|loop|break|continue|return|yield|await|throw|try|catch|finally|class|extends|super)\\b|(\\?\\?|\\.\\.\\.|\\?\\=|\\.\\.|\\?\\.?|:{2,3}|\\|\\||&&|[<>=!]==?|[-+*/%&|^~]=?|[<>=!]=|[-+*/%&|^~<>]=?)"
     },
 
     "coffee-bracket": {
@@ -411,6 +412,11 @@
     "coffee-splat": {
       "name": "keyword.operator.spread.coffeehaml",
       "match": "\\.\\.\\."
+    },
+
+    "coffee-import-keyword": {
+      "name": "keyword.control.import.coffeehaml",
+      "match": "\\b(import|export|default|from|as|type)\\b(?!\\s*[=:])"
     },
 
     "coffee-variable": {

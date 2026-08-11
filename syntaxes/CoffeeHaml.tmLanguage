@@ -363,7 +363,7 @@
 		<key>coffee-operator</key>
 		<dict>
 			<key>match</key>
-			<string>\b(and|or|not|is|isnt|instanceof|typeof|new|delete|of|in|then|when|do|by|own|unless|loop|break|continue|return|yield|await|throw|try|catch|finally|class|extends|super|import|export|default|from|as)\b|(\?\?|\.\.\.|\?\=|\.\.|\?\.?|:{2,3}|\|\||&amp;&amp;|[&lt;&gt;=!]==?|[-+*/%&amp;|^~]=?|[&lt;&gt;=!]=|[-+*/%&amp;|^~&lt;&gt;]=?)</string>
+			<string>\b(and|or|not|is|isnt|instanceof|typeof|new|delete|of|in|then|when|do|by|own|unless|loop|break|continue|return|yield|await|throw|try|catch|finally|class|extends|super)\b|(\?\?|\.\.\.|\?\=|\.\.|\?\.?|:{2,3}|\|\||&amp;&amp;|[&lt;&gt;=!]==?|[-+*/%&amp;|^~]=?|[&lt;&gt;=!]=|[-+*/%&amp;|^~&lt;&gt;]=?)</string>
 			<key>name</key>
 			<string>keyword.operator.coffeehaml</string>
 		</dict>
@@ -550,6 +550,13 @@
 				</dict>
 			</array>
 		</dict>
+		<key>coffee-import-keyword</key>
+		<dict>
+			<key>match</key>
+			<string>\b(import|export|default|from|as|type)\b(?!\s*[=:])</string>
+			<key>name</key>
+			<string>keyword.control.import.coffeehaml</string>
+		</dict>
 		<key>coffee-variable</key>
 		<dict>
 			<key>match</key>
@@ -616,6 +623,10 @@
 				<dict>
 					<key>include</key>
 					<string>#coffee-splat</string>
+				</dict>
+				<dict>
+					<key>include</key>
+					<string>#coffee-import-keyword</string>
 				</dict>
 				<dict>
 					<key>include</key>
