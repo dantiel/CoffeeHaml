@@ -175,6 +175,7 @@ function parseElement(state: ParserState): Element {
   let id: string | null = null;
   let attributes: AnyAttribute[] = [];
   let isSelfClosing = false;
+  let attrStyle: 'braces' | 'parens' | 'bare' | null = null;
 
   // Parse modifiers and attributes
   while (state.current &&
@@ -195,9 +196,11 @@ function parseElement(state: ParserState): Element {
     } else if (tok.type === TokenType.ATTRS_BRACE) {
       state.advance();
       attributes.push(...parseAttributeBlock(tok.value, '{}', tagToken.location));
+      attrStyle = 'braces';
     } else if (tok.type === TokenType.ATTRS_PAREN) {
       state.advance();
       attributes.push(...parseAttributeBlock(tok.value, '()', tagToken.location));
+      attrStyle = 'parens';
     } else if (tok.type === TokenType.SELF_CLOSE) {
       state.advance();
       isSelfClosing = true;
@@ -226,7 +229,7 @@ function parseElement(state: ParserState): Element {
     state.expect(TokenType.DEDENT);
   }
 
-  return new Element(tag, { classes, id, attributes, children, isComponent, isSelfClosing, location: tagToken.location });
+  return new Element(tag, { classes, id, attributes, children, isComponent, isSelfClosing, attrStyle, location: tagToken.location });
 }
 
 // ─── ImplicitDiv ───────────────────────────────────────────
@@ -235,6 +238,7 @@ function parseImplicitDiv(state: ParserState): ImplicitDiv {
   let classes: string[] = [];
   let id: string | null = null;
   let attributes: AnyAttribute[] = [];
+  let attrStyle: 'braces' | 'parens' | 'bare' | null = null;
 
   const firstToken = state.current!; // for location
 
@@ -255,9 +259,11 @@ function parseImplicitDiv(state: ParserState): ImplicitDiv {
     } else if (tok.type === TokenType.ATTRS_BRACE) {
       state.advance();
       attributes.push(...parseAttributeBlock(tok.value, '{}', firstToken.location));
+      attrStyle = 'braces';
     } else if (tok.type === TokenType.ATTRS_PAREN) {
       state.advance();
       attributes.push(...parseAttributeBlock(tok.value, '()', firstToken.location));
+      attrStyle = 'parens';
     }
   }
 
@@ -275,7 +281,7 @@ function parseImplicitDiv(state: ParserState): ImplicitDiv {
     state.expect(TokenType.DEDENT);
   }
 
-  return new ImplicitDiv({ classes, id, attributes, children, location: firstToken.location });
+  return new ImplicitDiv({ classes, id, attributes, children, attrStyle, location: firstToken.location });
 }
 
 // ─── Output ────────────────────────────────────────────────

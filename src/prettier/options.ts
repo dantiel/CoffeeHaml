@@ -163,6 +163,17 @@ const controlFlowInline: BooleanSupportOption = {
   description: 'Allow - if x then .ok one-liners (anti-Prettier by default).',
 };
 
+/** Merge consecutive standalone - statements into indented block. */
+const statementMerging: ChoiceSupportOption<'preserve' | 'merge'> = {
+  category: CAT.CONTROL_FLOW,
+  type: 'choice',
+  description: 'Merge consecutive - lines into a single indented block. Only childless statements.',
+  choices: [
+    { value: 'preserve', description: 'Keep each - line separate' },
+    { value: 'merge', description: 'Merge consecutive childless statements into one indented block' },
+  ],
+};
+
 /** Reflow/format comment text. */
 const commentFormat: BooleanSupportOption = {
   category: CAT.COMMENTS,
@@ -188,6 +199,7 @@ export const options: Record<string, SupportOption> = {
   trailingWhitespace,
   continuationStyle,
   controlFlowInline,
+  statementMerging,
   commentFormat,
 };
 
@@ -207,5 +219,6 @@ export const defaultOptions: Record<string, any> = {
   trailingWhitespace: 'remove',
   continuationStyle: 'indent',
   controlFlowInline: false,
+  statementMerging: 'preserve',
   commentFormat: false,
 };

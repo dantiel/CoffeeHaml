@@ -7,7 +7,7 @@ import type { Plugin, Parser, Printer, SupportLanguage, ParserOptions, Options, 
 import { tokenize } from '../lexer.js';
 import { parse } from '../parser.js';
 import { Node } from '../ast.js';
-import { print, CoffeeHamlFormatOptions } from './printer.js';
+import { print, embedCoffeeScript, CoffeeHamlFormatOptions } from './printer.js';
 import { options, defaultOptions } from './options.js';
 
 // ─── Language ──────────────────────────────────────────────
@@ -59,14 +59,18 @@ const coffeeHamlPrinter: Printer<Node> = {
   ): Doc {
     // Merge Prettier core options + our plugin options into CoffeeHamlFormatOptions
     const opts = options as unknown as CoffeeHamlFormatOptions;
+    // Pass original text for blank-line detection
+    if ((options as any).originalText) {
+      opts.originalText = (options as any).originalText;
+    }
     return print(path, opts, printFn);
   },
 
   embed(
-    _path: AstPath<Node>,
+    path: AstPath<Node>,
     _options: Options,
-  ): any {
-    return undefined; // Phase 4
+  ): Doc | null {
+    return embedCoffeeScript(path, print) ?? null;
   },
 
   insertPragma(text: string): string {

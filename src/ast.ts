@@ -72,6 +72,8 @@ export class Element extends Node {
   readonly children: Node[];            // nested child nodes
   readonly isComponent: boolean;        // true if tag starts uppercase
   readonly isSelfClosing: boolean;      // void elements or %.../
+  /** Original attribute syntax: braces, parens, or bare. Null if no attributes. */
+  readonly attrStyle: 'braces' | 'parens' | 'bare' | null;
 
   constructor(
     tag: string | Expression,
@@ -82,6 +84,7 @@ export class Element extends Node {
       children?: Node[];
       isComponent?: boolean;
       isSelfClosing?: boolean;
+      attrStyle?: 'braces' | 'parens' | 'bare' | null;
       location?: SourceLocation;
     } = {}
   ) {
@@ -93,6 +96,7 @@ export class Element extends Node {
     this.children = opts.children ?? [];
     this.isComponent = opts.isComponent ?? false;
     this.isSelfClosing = opts.isSelfClosing ?? false;
+    this.attrStyle = opts.attrStyle ?? null;
   }
 }
 
@@ -121,6 +125,8 @@ export class ImplicitDiv extends Node {
   readonly id: string | null;
   readonly attributes: AnyAttribute[];
   readonly children: Node[];
+  /** Original attribute syntax: braces, parens, or bare. Null if no attributes. */
+  readonly attrStyle: 'braces' | 'parens' | 'bare' | null;
 
   constructor(
     opts: {
@@ -128,6 +134,7 @@ export class ImplicitDiv extends Node {
       id?: string | null;
       attributes?: AnyAttribute[];
       children?: Node[];
+      attrStyle?: 'braces' | 'parens' | 'bare' | null;
       location?: SourceLocation;
     } = {}
   ) {
@@ -136,6 +143,7 @@ export class ImplicitDiv extends Node {
     this.id = opts.id ?? null;
     this.attributes = opts.attributes ?? [];
     this.children = opts.children ?? [];
+    this.attrStyle = opts.attrStyle ?? null;
   }
 }
 
