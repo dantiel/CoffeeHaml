@@ -1,6 +1,6 @@
 {
   "name": "coffeehaml",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Haml structure. CoffeeScript semantics. React runtime. Zero runtime. Vite-native.",
   "type": "module",
   "license": "MIT",
@@ -14,21 +14,17 @@
   },
   "homepage": "https://github.com/dantiel/CoffeeHaml#readme",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "bin": {
     "coffeehaml": "./dist/cli.js"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./vite": {
-      "types": "./dist/vite-plugin.d.ts",
       "default": "./dist/vite-plugin.js"
     },
     "./prettier": {
-      "types": "./dist/prettier/index.d.ts",
       "default": "./dist/prettier/index.js"
     }
   },
@@ -64,10 +60,9 @@
     ]
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "build": "coffee -c -o dist/ src/*.coffee && coffee -c -o dist/prettier/ src/prettier/*.coffee",
+    "dev": "coffee -c -w -o dist/ src/*.coffee & coffee -c -w -o dist/prettier/ src/prettier/*.coffee",
+    "test": "node test/prettier/run-integration-tests.mjs && node test/prettier/run-coffeescript-tests.mjs && node test/prettier/run-statement-merge-tests.mjs",
     "prepublishOnly": "npm run build",
     "fmt": "prettier --write --plugin=. **/*.chaml"
   },

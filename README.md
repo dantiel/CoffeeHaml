@@ -76,6 +76,19 @@ expressions like `{onClick: handler}` or `{disabled: !connected}`).
 
 ## Usage
 
+### TextMate Bundle
+
+A complete TextMate bundle ships with the repo at [`CoffeeHaml.tmbundle/`](CoffeeHaml.tmbundle/).
+Install via symlink:
+
+```bash
+ln -sfn "$(pwd)/CoffeeHaml.tmbundle" \
+  ~/"Library/Application Support/TextMate/Bundles/CoffeeHaml.tmbundle"
+```
+
+Includes syntax highlighting, Prettier formatting (`⌃⌥F`), compilation commands,
+snippets, and symbol navigation. See [bundle README](CoffeeHaml.tmbundle/README.md).
+
 ### CLI
 
 ```bash
@@ -160,23 +173,24 @@ Full grammar: [`docs/grammar.md`](docs/grammar.md)
 
 ## Status
 
-**v0.6.0 — production beta.** The compiler pipeline (Lexer → Parser → Emitter)
-is complete. Source maps, component wrapping, spread attributes, arrow
-continuation (`= items.map (item) ->`), statement/expression continuation,
-source-located errors, `coffeehaml init` scaffold, Fast Refresh annotations,
-and multi-error parser recovery are all functional.
+**v0.7.0 — production beta.** The compiler pipeline (Lexer → Parser → Emitter)
+is complete. The [Prettier plugin](src/prettier/) provides 16 deactivatable
+formatting options including attribute style preservation, statement merging,
+blank line handling, and CoffeeScript code formatting.
 
 | Feature | Status |
 |---------|--------|
 | Elements, components, implicit divs | ✅ |
 | `.class` / `#id` modifiers | ✅ |
 | `{attr: val}` / `(attr: val)` + spread `{props...}` | ✅ |
+| attribute style preservation (braces/parens/bare) | ✅ |
 | Inline `= expression` output | ✅ |
 | `=` expression continuation (indented) | ✅ |
 | `-` statement continuation (indented) | ✅ |
 | `- if` / `- unless` / `- else` / `- else if` | ✅ |
 | `- for item in items` → `.map()` | ✅ |
 | `- while` | ✅ |
+| Statement merging (`-` blocks) | ✅ |
 | Haml/HTML comments | ✅ |
 | `:filter` blocks | ✅ |
 | Prologue passthrough (`import`, `@decorator`) | ✅ |
@@ -191,6 +205,8 @@ and multi-error parser recovery are all functional.
 | Source maps | ✅ |
 | CoffeeScript expression compilation | ✅ (requires peer dep) |
 | React Fast Refresh annotations | ✅ |
+| Prettier formatter plugin (16 options) | ✅ |
+| TextMate bundle (commands, snippets, syntax) | ✅ |
 
 ---
 
