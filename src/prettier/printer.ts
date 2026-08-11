@@ -288,7 +288,11 @@ function printEl(path: Path, printFn: PrintFn): Doc {
 
   // Single inline child → keep inline
   if (isSingleInlineChild(node.children)) {
-    return group([tagDoc, attrsDoc, ' ', formatInlineChild(node.children[0], o)]);
+    const child = node.children[0];
+    const inlineDoc = formatInlineChild(child, o);
+    // Output (= expr) already has its own separator; Text needs a space
+    const sep = child instanceof Output ? '' : ' ';
+    return group([tagDoc, attrsDoc, sep, inlineDoc]);
   }
 
   const childDocs = path.map(printFn, 'children') as Doc[];
@@ -599,7 +603,10 @@ function printFilt(path: Path): Doc {
   const node = path.getValue() as Filter;
   const lines = node.content.split('\n');
   const bodyDocs: Doc[] = [];
-  for (const l of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    // Skip leading empty line (from content starting with \n)
+    if (i === 0 && l === '') continue;
     bodyDocs.push(hardline);
     bodyDocs.push('  ' + l);
   }
