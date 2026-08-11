@@ -1,5 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "uuid": "1EEA33FD-AEAC-4C44-9EB6-D4D0D9E5C9CB",
   "name": "CoffeeHaml",
   "scopeName": "source.coffeehaml",
   "fileTypes": ["chaml", "coffeehaml"],
