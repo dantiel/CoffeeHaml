@@ -95,14 +95,14 @@
     "modifiers": {
       "patterns": [
         {
-          "name": "entity.other.attribute-name.class.coffeehaml",
+          "name": "entity.name.tag.class.coffeehaml",
           "match": "\\.([\\w-]+)",
-          "captures": { "1": { "name": "entity.other.attribute-name.class.coffeehaml" } }
+          "captures": { "1": { "name": "entity.name.tag.class.coffeehaml" } }
         },
         {
-          "name": "entity.other.attribute-name.id.coffeehaml",
+          "name": "entity.name.tag.id.coffeehaml",
           "match": "#([\\w-]+)",
-          "captures": { "1": { "name": "entity.other.attribute-name.id.coffeehaml" } }
+          "captures": { "1": { "name": "entity.name.tag.id.coffeehaml" } }
         }
       ]
     },
