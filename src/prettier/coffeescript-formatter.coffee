@@ -155,8 +155,18 @@ normalizeSpacing = (tokens, originalSource = null) ->
       continue if cur.generated
       continue if cur.range and cur.range[0] >= cur.range[1]
 
-    # Skip INDENT/OUTDENT
-    if cur.type in ['INDENT', 'OUTDENT']
+    # Handle INDENT — represents inline then/when/else/etc from CoffeeScript
+    if cur.type is 'INDENT'
+      text = getTokenText cur, originalSource
+      trimmed = text?.trim()
+      if trimmed and trimmed isnt ''
+        parts.push ' ' + trimmed + ' '
+        prevWasAtExprStart = false
+        afterPrevIsExprStart = true
+        prevVisible = cur
+      continue
+
+    if cur.type is 'OUTDENT'
       continue
 
     # Skip TERMINATOR

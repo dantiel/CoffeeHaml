@@ -273,7 +273,8 @@ printFlow = (path, o, printFn) ->
 
   # Build header
   header = switch kind
-    when 'statement' then '-'
+    when 'statement'
+      if expr then "- #{expr}" else '-'
     when 'else'      then '- else'
     when 'else if'   then "- else if #{expr}"
     else "- #{kind} #{expr}"
@@ -288,6 +289,17 @@ printFlow = (path, o, printFn) ->
 
   if children.length is 0
     return header
+
+  # Re-parsed merged statements: statement-kind with empty expr + TEXT children
+  # Use baked indentation (matching printMergedFlow) to avoid Prettier indent quirks
+  if kind is 'statement' and not expr and children.every((c) -> c instanceof Text or c instanceof Output)
+    childLines = children.map (c) ->
+      val = switch
+        when c instanceof Text then c.value
+        when c instanceof Output then c.expression?.source ? ''
+        else ''
+      '  ' + val
+    return join hardline, ['-', childLines.join('\n')]
 
   join hardline, [header, indent(join(hardline, path.map(printFn, 'children') ? []))]
 

@@ -30,9 +30,38 @@ export TokenType =
 
 # ─── Main entry ────────────────────────────────────────────
 
+# ─── Pre-processing: merge lines with unclosed attribute brackets ──
+preMergeBracketLines = (lines) ->
+  result = []
+  i = 0
+  while i < lines.length
+    line = lines[i]
+    rest = line.replace(/^\s+/, '')
+    # Check if this is a HAML tag/implicit-div line with unclosed {
+    if /^[%.#]/.test(rest) and rest.includes('{') and not rest.includes('}')
+      merged = line
+      i++
+      while i < lines.length
+        merged += '\n' + lines[i]
+        i++
+        break if lines[i - 1].includes('}')
+      result.push merged
+    else if /^[%.#]/.test(rest) and rest.includes('(') and not rest.includes(')')
+      merged = line
+      i++
+      while i < lines.length
+        merged += '\n' + lines[i]
+        i++
+        break if lines[i - 1].includes(')')
+      result.push merged
+    else
+      result.push line
+      i++
+  result
+
 export tokenize = (source, filename = null) ->
   tokens = []
-  lines = source.split '\n'
+  lines = preMergeBracketLines source.split '\n'
   indentStack = [0]
   offset = 0
   lineIndex = 0
@@ -136,6 +165,11 @@ tokenizeLine = (content, lineStartOffset, _lineLength, filename = null, lineInde
     tokens.push modResult.tokens...
     pos = modResult.pos
 
+    # Self-closing / after attributes (must check BEFORE remaining text)
+    if content[pos] is '/'
+      tokens.push type: TokenType.SELF_CLOSE, value: '/', location: loc pos, pos + 1
+      pos++
+
     remaining = content.slice(pos).trimStart()
     trimmedOffset = content.length - remaining.length
     if remaining
@@ -153,6 +187,11 @@ tokenizeLine = (content, lineStartOffset, _lineLength, filename = null, lineInde
     modResult = parseModifiersAndAttrs content, 0, lineStartOffset, filename, lineIndex
     tokens.push modResult.tokens...
     pos = modResult.pos
+
+    # Self-closing / after attributes (must check BEFORE remaining text)
+    if content[pos] is '/'
+      tokens.push type: TokenType.SELF_CLOSE, value: '/', location: loc pos, pos + 1
+      pos++
 
     remaining = content.slice(pos).trimStart()
     trimmedOffset = content.length - remaining.length
