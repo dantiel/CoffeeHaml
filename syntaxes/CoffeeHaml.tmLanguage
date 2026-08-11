@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>uuid</key>
-	<string>1EEA33FD-AEAC-4C44-9EB6-D4D0D9E5C9CB</string>
 	<key>fileTypes</key>
 	<array>
 		<string>chaml</string>
@@ -68,6 +66,8 @@
 					<string>punctuation.definition.attributes.begin.coffeehaml</string>
 				</dict>
 			</dict>
+			<key>contentName</key>
+			<string>source.coffee.embedded.haml</string>
 			<key>end</key>
 			<string>\}</string>
 			<key>endCaptures</key>
@@ -110,7 +110,7 @@
 				</dict>
 				<dict>
 					<key>include</key>
-					<string>#coffeescript-expression</string>
+					<string>source.coffee</string>
 				</dict>
 			</array>
 		</dict>
@@ -146,6 +146,8 @@
 					<string>punctuation.definition.attributes.begin.coffeehaml</string>
 				</dict>
 			</dict>
+			<key>contentName</key>
+			<string>source.coffee.embedded.haml</string>
 			<key>end</key>
 			<string>\)</string>
 			<key>endCaptures</key>
@@ -313,6 +315,13 @@
 			<string>(-&gt;|=&gt;)|\b(function)\b</string>
 			<key>name</key>
 			<string>meta.function.arrow.coffeehaml</string>
+		</dict>
+		<key>coffee-import-keyword</key>
+		<dict>
+			<key>match</key>
+			<string>\b(import|export|default|from|as|type)\b(?!\s*[=:])</string>
+			<key>name</key>
+			<string>keyword.control.import.coffeehaml</string>
 		</dict>
 		<key>coffee-interpolation</key>
 		<dict>
@@ -550,13 +559,6 @@
 				</dict>
 			</array>
 		</dict>
-		<key>coffee-import-keyword</key>
-		<dict>
-			<key>match</key>
-			<string>\b(import|export|default|from|as|type)\b(?!\s*[=:])</string>
-			<key>name</key>
-			<string>keyword.control.import.coffeehaml</string>
-		</dict>
 		<key>coffee-variable</key>
 		<dict>
 			<key>match</key>
@@ -570,67 +572,7 @@
 			<array>
 				<dict>
 					<key>include</key>
-					<string>#coffee-string-double</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-string-single</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-string-template</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-string-heredoc</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-regex</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-function</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-interpolation</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-number</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-boolean</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-null</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-operator</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-comment</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-bracket</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-splat</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-import-keyword</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#coffee-variable</string>
+					<string>source.coffee</string>
 				</dict>
 			</array>
 		</dict>
@@ -686,6 +628,8 @@
 					<string>punctuation.definition.control.coffeehaml</string>
 				</dict>
 			</dict>
+			<key>contentName</key>
+			<string>source.coffee.embedded.haml</string>
 			<key>end</key>
 			<string>$</string>
 			<key>name</key>
@@ -693,26 +637,8 @@
 			<key>patterns</key>
 			<array>
 				<dict>
-					<key>match</key>
-					<string>\b(if|unless)\b</string>
-					<key>name</key>
-					<string>keyword.control.conditional.coffeehaml</string>
-				</dict>
-				<dict>
-					<key>match</key>
-					<string>\b(for|while|do)\b</string>
-					<key>name</key>
-					<string>keyword.control.loop.coffeehaml</string>
-				</dict>
-				<dict>
-					<key>match</key>
-					<string>\b(else|then|when|by|of|in)\b</string>
-					<key>name</key>
-					<string>keyword.control.flow.coffeehaml</string>
-				</dict>
-				<dict>
 					<key>include</key>
-					<string>#coffeescript-expression</string>
+					<string>source.coffee</string>
 				</dict>
 			</array>
 		</dict>
@@ -871,6 +797,8 @@
 					<string>keyword.operator.output.coffeehaml</string>
 				</dict>
 			</dict>
+			<key>contentName</key>
+			<string>source.coffee.embedded.haml</string>
 			<key>end</key>
 			<string>$</string>
 			<key>name</key>
@@ -879,7 +807,7 @@
 			<array>
 				<dict>
 					<key>include</key>
-					<string>#coffeescript-expression</string>
+					<string>source.coffee</string>
 				</dict>
 			</array>
 		</dict>
@@ -941,6 +869,8 @@
 					<string>keyword.operator.output.coffeehaml</string>
 				</dict>
 			</dict>
+			<key>contentName</key>
+			<string>source.coffee.embedded.haml</string>
 			<key>end</key>
 			<string>$</string>
 			<key>name</key>
@@ -949,7 +879,7 @@
 			<array>
 				<dict>
 					<key>include</key>
-					<string>#coffeescript-expression</string>
+					<string>source.coffee</string>
 				</dict>
 			</array>
 		</dict>
@@ -963,7 +893,7 @@
 					<array>
 						<dict>
 							<key>include</key>
-							<string>#coffeescript-expression</string>
+							<string>source.coffee</string>
 						</dict>
 					</array>
 				</dict>
@@ -1038,5 +968,7 @@
 	</dict>
 	<key>scopeName</key>
 	<string>source.coffeehaml</string>
+	<key>uuid</key>
+	<string>1EEA33FD-AEAC-4C44-9EB6-D4D0D9E5C9CB</string>
 </dict>
 </plist>
