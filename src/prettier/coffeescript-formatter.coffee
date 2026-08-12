@@ -156,10 +156,11 @@ normalizeSpacing = (tokens, originalSource = null) ->
       continue if cur.range and cur.range[0] >= cur.range[1]
 
     # Handle INDENT — represents inline then/when/else/etc from CoffeeScript
+    # Only emit keyword text (e.g. "then"), skip structural indentation digits
     if cur.type is 'INDENT'
       text = getTokenText cur, originalSource
       trimmed = text?.trim()
-      if trimmed and trimmed isnt ''
+      if trimmed and trimmed isnt '' and not /^\d+$/.test(trimmed)
         parts.push ' ' + trimmed + ' '
         prevWasAtExprStart = false
         afterPrevIsExprStart = true

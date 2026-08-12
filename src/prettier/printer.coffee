@@ -170,9 +170,15 @@ printDoc = (path, o, printFn) ->
       next = node.children[node.children.indexOf(n) + 1]
       analyzeBlankLines [n, next], o.originalText if next
 
-  # Print children
+  # Print prologue (bare import/require lines at top of file)
+  prologue = node.prologue or []
   childDocs = path.map(printFn, 'children') ? []
-  join hardline, childDocs
+  allDocs = if prologue.length
+    gap = if childDocs.length then [''] else []
+    prologue.concat(gap).concat childDocs
+  else
+    childDocs
+  join hardline, allDocs
 
 # ─── Element ───────────────────────────────────────────────
 
