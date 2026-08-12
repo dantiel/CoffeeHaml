@@ -116,6 +116,16 @@ export compileStatement = (source, location = null) ->
 
 # ─── Convert var → const/let ───────────────────────────────
 
+# Extract the bound variable name from one entry of an object
+# destructuring pattern — shorthand `x` stays `x`, aliased `key: target`
+# yields `target`.
+objectTarget = (pair) ->
+  pair = pair.trim()
+  if pair.includes ':'
+    pair.split(':')[1].trim()
+  else
+    pair
+
 stripToConst = (js) ->
   stmts = splitTopLevelStatements js
   return js.replace(/;\s*$/, '') if stmts.length is 0
@@ -130,21 +140,40 @@ stripToConst = (js) ->
     .map (s) -> s.trim()
     .filter Boolean
 
-  body = stmts.filter (s, i) -> i isnt varIdx
+  body = (collapseWs(s).replace(/;\s*$/, '') for s in stmts.filter (s, i) -> i isnt varIdx)
 
   assignments = []
-  for name in varNames
-    idx = body.findIndex (s) ->
-      t = s.trim()
-      t.startsWith("#{name} =") or t.startsWith("#{name}=")
-    if idx >= 0
-      assign = collapseWs(body[idx]).replace(/;\s*$/, '')
-      assignments.push 'const ' + assign
+  consumed = []
+  for s in body
+    m = s.match /^\[([^\]]*)\]\s*=/
+    if m?
+      # Array destructuring: [a, b] = expr
+      names = (n.trim() for n in m[1].split ',' when n.trim())
+      consumed = consumed.concat names
+      assignments.push 'const ' + s
+      continue
 
-  if assignments.length > 0
+    m = s.match /^\(\s*\{([^}]*)\}\s*=.*\)$/
+    if m?
+      # Object destructuring: ({x, y} = expr) -> const {x, y} = expr
+      inner = s.replace(/^\s*\(\s*/, '').replace(/\s*\)\s*$/, '')
+      names = (objectTarget(n) for n in m[1].split ',' when n.trim())
+      consumed = consumed.concat names
+      assignments.push 'const ' + inner
+      continue
+
+    name = varNames.find (n) -> s.startsWith("#{n} =") or s.startsWith("#{n}=")
+    if name?
+      consumed.push name
+      assignments.push 'const ' + s
+
+  allConsumed = varNames.every (n) -> n in consumed
+  if assignments.length > 0 and allConsumed
     return assignments.join '; '
 
-  body.map((s) -> collapseWs s).join ' '
+  # Fallback: keep the original var declaration so no variable goes
+  # undeclared (e.g. chained assignment `a = b = 1`).
+  (collapseWs(s).replace(/;\s*$/, '') for s in stmts).join '; '
 
 # Split compiled JS into top-level statements, respecting string literals
 # and bracket nesting so multiline object/array/call literals stay intact.
