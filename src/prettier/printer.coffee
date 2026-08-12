@@ -213,7 +213,7 @@ printElement = (path, o, printFn) ->
 
   childDocs = path.map(printFn, 'children') ? []
   joined = joinChildrenWithBlanks children, childDocs, o
-  join hardline, [header, indent(joined)]
+  [header, indent([hardline, joined])]
 
 # ─── ImplicitDiv ───────────────────────────────────────────
 
@@ -237,7 +237,7 @@ printImplicitDiv = (path, o, printFn) ->
 
   childDocs = path.map(printFn, 'children') ? []
   joined = joinChildrenWithBlanks children, childDocs, o
-  join hardline, [header, indent(joined)]
+  [header, indent([hardline, joined])]
 
 # ─── Output ────────────────────────────────────────────────
 
@@ -255,7 +255,7 @@ printOutput = (path, o, printFn) ->
 
   childDocs = path.map(printFn, 'children') ? []
   joined = joinChildrenWithBlanks children, childDocs, o
-  join hardline, ["#{marker} #{expr}", indent(joined)]
+  ["#{marker} #{expr}", indent([hardline, joined])]
 
 # ─── Control Flow ──────────────────────────────────────────
 
@@ -301,7 +301,7 @@ printFlow = (path, o, printFn) ->
       '  ' + val
     return join hardline, ['-', childLines.join('\n')]
 
-  join hardline, [header, indent(join(hardline, path.map(printFn, 'children') ? []))]
+  [header, indent([hardline, join(hardline, path.map(printFn, 'children') ? [])])]
 
 printMergedFlow = (path, o, printFn) ->
   node = path.node
