@@ -372,30 +372,43 @@ formatAttributes = (node, style, o) ->
   attrs = node.attributes ? []
   return '' unless attrs.length > 0
 
-  parts = []
-  for attr in attrs
-    if attr.spread
-      expr = attr.expression.source ? ''
-      if o.coffeeScriptFormat then expr = formatCoffeeScript expr, o
-      parts.push if style is 'parens' then "...#{expr}" else "{#{expr}...}"
-      continue
+  # Bare style: HTML-style key="val" key2={expr} — space-separated
+  if style is 'bare'
+    bareParts = for attr in attrs
+      if attr.spread
+        expr = attr.expression.source ? ''
+        if o.coffeeScriptFormat then expr = formatCoffeeScript expr, o
+        "{#{expr}...}"
+      else if attr.shorthand
+        attr.name
+      else
+        "#{attr.name}=#{attr.value.source ? ''}"
+    " #{bareParts.join ' '}"
+  else
+    parts = []
+    for attr in attrs
+      if attr.spread
+        expr = attr.expression.source ? ''
+        if o.coffeeScriptFormat then expr = formatCoffeeScript expr, o
+        parts.push if style is 'parens' then "...#{expr}" else "{#{expr}...}"
+        continue
 
-    name = attr.name
-    val = attr.value.source ? ''
-    if o.coffeeScriptFormat then val = formatCoffeeScript val, o
+      name = attr.name
+      val = attr.value.source ? ''
+      if o.coffeeScriptFormat then val = formatCoffeeScript val, o
 
-    if attr.shorthand
-      parts.push name
-    else
-      parts.push "#{name}: #{val}"
+      if attr.shorthand
+        parts.push name
+      else
+        parts.push "#{name}: #{val}"
 
-  switch style
-    when 'braces'
-      "{ #{parts.join ', '} }"
-    when 'parens'
-      "( #{parts.join ', '} )"
-    else
-      parts.join ', '
+    switch style
+      when 'braces'
+        "{ #{parts.join ', '} }"
+      when 'parens'
+        "( #{parts.join ', '} )"
+      else
+        parts.join ', '
 
 # ─── CoffeeScript Embed (for Prettier embed) ───────────────
 

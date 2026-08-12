@@ -129,7 +129,7 @@ parseElement = (state) ->
   while state.current() and (
     state.current().type in [
       TokenType.CLASS, TokenType.ID,
-      TokenType.ATTRS_BRACE, TokenType.ATTRS_PAREN, TokenType.SELF_CLOSE
+      TokenType.ATTRS_BRACE, TokenType.ATTRS_PAREN, TokenType.ATTRS_BARE, TokenType.SELF_CLOSE
     ])
 
     tok = state.current()
@@ -149,6 +149,10 @@ parseElement = (state) ->
         state.advance()
         attributes.push parseAttributeBlock(tok.value, '()', tagToken.location)...
         attrStyle = 'parens'
+      when TokenType.ATTRS_BARE
+        state.advance()
+        attributes.push parseBareAttributes(tok.value)...
+        attrStyle = 'bare'
       when TokenType.SELF_CLOSE
         state.advance()
         isSelfClosing = true
@@ -186,7 +190,7 @@ parseImplicitDiv = (state) ->
   firstToken = state.current()
 
   while state.current() and (
-    state.current().type in [TokenType.CLASS, TokenType.ID, TokenType.ATTRS_BRACE, TokenType.ATTRS_PAREN])
+    state.current().type in [TokenType.CLASS, TokenType.ID, TokenType.ATTRS_BRACE, TokenType.ATTRS_PAREN, TokenType.ATTRS_BARE])
 
     tok = state.current()
 
@@ -205,6 +209,10 @@ parseImplicitDiv = (state) ->
         state.advance()
         attributes.push parseAttributeBlock(tok.value, '()', firstToken.location)...
         attrStyle = 'parens'
+      when TokenType.ATTRS_BARE
+        state.advance()
+        attributes.push parseBareAttributes(tok.value)...
+        attrStyle = 'bare'
 
   # Parse inline text
   children = []
@@ -342,6 +350,77 @@ parseText = (state) ->
   new Text token.value, token.location
 
 # ─── Attribute Block Parser ────────────────────────────────
+
+# Parse bare HTML-style attributes: key="val", key='val', key={expr}, flag
+parseBareAttributes = (source) ->
+  attrs = []
+  return attrs unless source?.trim()
+  # Split on whitespace respecting quotes and braces
+  parts = splitBareAttributePairs source
+  for part in parts
+    trimmed = part.trim()
+    continue unless trimmed
+    # key=value
+    eqIdx = findEquals trimmed
+    if eqIdx > 0
+      name = trimmed.slice(0, eqIdx)
+      val = trimmed.slice(eqIdx + 1)
+      attrs.push new Attribute cleanAttrName(name), new Expression(val), false
+    else
+      # Bare word → shorthand attribute like `flag` → flag={flag}
+      attrs.push new Attribute trimmed, new Expression(trimmed), true
+  attrs
+
+# Split bare attributes on whitespace, respecting quotes and braces
+splitBareAttributePairs = (source) ->
+  result = []
+  depth = 0
+  start = 0
+  i = 0
+  while i < source.length
+    ch = source[i]
+    if ch in ['{', '[', '(']
+      depth++
+    else if ch in ['}', ']', ')']
+      depth--
+    else if ch in ['"', "'"] and depth is 0
+      q = ch
+      i++
+      while i < source.length and source[i] isnt q
+        i++ if source[i] is '\\'
+        i++
+    else if /[\t ]/.test(ch) and depth is 0
+      if i > start then result.push source.slice start, i
+      start = i + 1
+    i++
+  if i > start then result.push source.slice start
+  result
+
+# Find = sign (not inside quotes/braces)
+findEquals = (source) ->
+  depth = 0
+  i = 0
+  while i < source.length
+    ch = source[i]
+    if ch in ['{', '[', '('] then depth++
+    else if ch in ['}', ']', ')'] then depth--
+    else if ch in ['"', "'"] and depth is 0
+      q = ch
+      i++
+      while i < source.length and source[i] isnt q
+        i++ if source[i] is '\\'
+        i++
+    else if ch is '=' and depth is 0
+      return i
+    i++
+  -1
+
+# Remove surrounding quotes from attr name
+cleanAttrName = (name) ->
+  n = name.trim()
+  if (n.startsWith('"') and n.endsWith('"')) or (n.startsWith("'") and n.endsWith("'"))
+    n = n.slice(1, -1)
+  n
 
 parseAttributeBlock = (source, _style, _location = null) ->
   attrs = []

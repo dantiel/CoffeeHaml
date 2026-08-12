@@ -11,6 +11,7 @@ export TokenType =
   ID:           'ID'
   ATTRS_PAREN:  'ATTRS_PAREN'
   ATTRS_BRACE:  'ATTRS_BRACE'
+  ATTRS_BARE:   'ATTRS_BARE'
   OUTPUT:       'OUTPUT'
   OUTPUT_UNESC: 'OUTPUT_UNESC'
   CONTROL:      'CONTROL'
@@ -177,6 +178,8 @@ tokenizeLine = (content, lineStartOffset, _lineLength, filename = null, lineInde
         tokens.push type: TokenType.OUTPUT, value: remaining.slice(1).trimStart(), location: loc trimmedOffset + 1, content.length
       else if remaining.startsWith '!= '
         tokens.push type: TokenType.OUTPUT_UNESC, value: remaining.slice(2).trimStart(), location: loc trimmedOffset + 2, content.length
+      else if looksLikeBareAttributes remaining
+        tokens.push type: TokenType.ATTRS_BARE, value: remaining, location: loc trimmedOffset, content.length
       else unless remaining.startsWith('{') or remaining.startsWith '('
         tokens.push type: TokenType.TEXT, value: remaining, location: loc trimmedOffset, content.length
 
@@ -200,6 +203,8 @@ tokenizeLine = (content, lineStartOffset, _lineLength, filename = null, lineInde
         tokens.push type: TokenType.OUTPUT, value: remaining.slice(1).trimStart(), location: loc trimmedOffset + 1, content.length
       else if remaining.startsWith '!= '
         tokens.push type: TokenType.OUTPUT_UNESC, value: remaining.slice(2).trimStart(), location: loc trimmedOffset + 2, content.length
+      else if looksLikeBareAttributes remaining
+        tokens.push type: TokenType.ATTRS_BARE, value: remaining, location: loc trimmedOffset, content.length
       else unless remaining.startsWith('{') or remaining.startsWith '('
         tokens.push type: TokenType.TEXT, value: remaining, location: loc trimmedOffset, content.length
 
@@ -311,6 +316,21 @@ parseModifiersAndAttrs = (content, startPos, lineStartOffset, filename = null, l
   { tokens, pos }
 
 # ─── Helpers ───────────────────────────────────────────────
+
+# Detects bare HTML-style attributes: key="val", key='val', key={expr}
+looksLikeBareAttributes = (text) ->
+  return false unless text and text.length > 0
+  # Must contain at least one = sign
+  return false unless text.includes '='
+  # Split on whitespace, skip empty
+  parts = text.match(/\S+/g) ? []
+  return false if parts.length is 0
+  # At least one part must look like key=value or be {expr}
+  for part in parts
+    return true if /^[\w-]+=/.test part       # key="val" or key='val' or key={expr}
+    return true if /^[\w-]+\{/.test part      # key{...}  alternative
+    return true if /^=\{/.test part           # ={expr}
+  false
 
 isHamlConstruct = (content) ->
   fc = content[0]
