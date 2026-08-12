@@ -125,7 +125,7 @@ export defaultOptions =
   implicitDivExpansion: false
   maxChainLength: 4
   inlineThreshold: -1
-  voidElementStyle: 'self-closing'
+  voidElementStyle: 'explicit'
   attributeStyle: 'preserve'
   attributeMultilineThreshold: 1
   attributeSort: 'none'

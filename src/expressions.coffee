@@ -117,29 +117,95 @@ export compileStatement = (source, location = null) ->
 # ─── Convert var → const/let ───────────────────────────────
 
 stripToConst = (js) ->
-  lines = (l for l in js.split '\n' when l.trim() isnt '')
-  varLine = lines.find (l) -> /^\s*var\b/.test l
-  return js.replace(/;\s*$/, '') unless varLine
+  stmts = splitTopLevelStatements js
+  return js.replace(/;\s*$/, '') if stmts.length is 0
 
-  varNames = varLine
+  varIdx = stmts.findIndex (s) -> /^\s*var\b/.test s
+  return js.replace(/;\s*$/, '') if varIdx < 0
+
+  varNames = stmts[varIdx]
     .replace(/^\s*var\s+/, '')
     .replace(/;\s*$/, '')
     .split ','
     .map (s) -> s.trim()
     .filter Boolean
 
+  body = stmts.filter (s, i) -> i isnt varIdx
+
   assignments = []
   for name in varNames
-    assignLine = lines.find (l) ->
-      t = l.trim()
+    idx = body.findIndex (s) ->
+      t = s.trim()
       t.startsWith("#{name} =") or t.startsWith("#{name}=")
-    if assignLine
-      assignments.push 'const ' + assignLine.trim().replace(/;\s*$/, '')
+    if idx >= 0
+      assign = collapseWs(body[idx]).replace(/;\s*$/, '')
+      assignments.push 'const ' + assign
 
   if assignments.length > 0
     return assignments.join '; '
 
-  lines
-    .filter((l) -> not /^\s*$/.test l)
-    .join ' '
-    .replace /;\s*$/, ''
+  body.map((s) -> collapseWs s).join ' '
+
+# Split compiled JS into top-level statements, respecting string literals
+# and bracket nesting so multiline object/array/call literals stay intact.
+splitTopLevelStatements = (js) ->
+  stmts = []
+  depth = 0
+  inString = null
+  start = 0
+  i = 0
+  while i < js.length
+    ch = js[i]
+    if inString
+      if ch is '\\'
+        i += 2
+        continue
+      inString = null if ch is inString
+      i++
+      continue
+    if ch in ["'", '"', '`']
+      inString = ch
+    else if ch in ['{', '[', '(']
+      depth++
+    else if ch in ['}', ']', ')']
+      depth--
+    else if ch is ';' and depth is 0
+      stmts.push js.slice(start, i).trim()
+      start = i + 1
+    i++
+  last = js.slice(start).trim()
+  stmts.push last if last
+  stmts
+
+# Collapse runs of whitespace to single spaces, preserving string contents.
+collapseWs = (s) ->
+  out = ''
+  inString = null
+  pendingSpace = false
+  i = 0
+  while i < s.length
+    ch = s[i]
+    if inString
+      out += ch
+      if ch is '\\' and i + 1 < s.length
+        out += s[i + 1]
+        i += 2
+        continue
+      inString = null if ch is inString
+      i++
+      continue
+    if ch in ["'", '"', '`']
+      out += ' ' if pendingSpace and out.length
+      pendingSpace = false
+      inString = ch
+      out += ch
+      i++
+      continue
+    if /\s/.test ch
+      pendingSpace = true
+    else
+      out += ' ' if pendingSpace and out.length
+      pendingSpace = false
+      out += ch
+    i++
+  out
