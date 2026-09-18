@@ -114,6 +114,51 @@ export compileStatement = (source, location = null) ->
       )
   source
 
+# ─── Compile yield block to JS expression ──────────────────
+# Compiles a fenced `=== ... ===` body to a single JS expression whose
+# value is the body's final result (the multiline counterpart to `=`).
+# A single expression compiles cleanly; multiple statements are wrapped
+# in an IIFE so CoffeeScript's implicit return becomes the yielded value.
+
+export compileYield = (source, location = null) ->
+  return '' if source.trim() is ''
+
+  try
+    CoffeeScript = loadCoffeeScript()
+    unless CoffeeScript and typeof CoffeeScript.compile is 'function'
+      return source
+
+    if isSingleExpression source
+      return compileExpression new Expression(source), location
+
+    indented = source.replace /^/gm, '  '
+    wrapped = "(->\n#{indented}\n)()"
+    js = CoffeeScript.compile wrapped,
+      bare: true
+      inlineMap: false
+    return collapseWs(js.trim()).replace(/;\s*$/, '')
+  catch e
+    msg = if e instanceof Error then e.message else String e
+    if location
+      throw new CompileError(
+        "CoffeeScript yield error: #{msg}"
+        'emitter'
+        'YIELD_ERROR'
+        location
+        "Check block: #{source.slice 0, 80}"
+      )
+  source
+
+isSingleExpression = (source) ->
+  try
+    CoffeeScript = loadCoffeeScript()
+    if CoffeeScript and typeof CoffeeScript.nodes is 'function'
+      root = CoffeeScript.nodes source
+      return root?.body?.expressions?.length is 1
+  catch
+    false
+  false
+
 # ─── Convert var → const/let ───────────────────────────────
 
 # Extract the bound variable name from one entry of an object
@@ -142,15 +187,15 @@ stripToConst = (js) ->
 
   body = (collapseWs(s).replace(/;\s*$/, '') for s in stmts.filter (s, i) -> i isnt varIdx)
 
-  assignments = []
+  constReplacements = {}
   consumed = []
-  for s in body
+  for s, idx in body
     m = s.match /^\[([^\]]*)\]\s*=/
     if m?
       # Array destructuring: [a, b] = expr
       names = (n.trim() for n in m[1].split ',' when n.trim())
       consumed = consumed.concat names
-      assignments.push 'const ' + s
+      constReplacements[idx] = 'const ' + s
       continue
 
     m = s.match /^\(\s*\{([^}]*)\}\s*=.*\)$/
@@ -159,17 +204,19 @@ stripToConst = (js) ->
       inner = s.replace(/^\s*\(\s*/, '').replace(/\s*\)\s*$/, '')
       names = (objectTarget(n) for n in m[1].split ',' when n.trim())
       consumed = consumed.concat names
-      assignments.push 'const ' + inner
+      constReplacements[idx] = 'const ' + inner
       continue
 
     name = varNames.find (n) -> s.startsWith("#{n} =") or s.startsWith("#{n}=")
     if name?
       consumed.push name
-      assignments.push 'const ' + s
+      constReplacements[idx] = 'const ' + s
 
   allConsumed = varNames.every (n) -> n in consumed
-  if assignments.length > 0 and allConsumed
-    return assignments.join '; '
+  if allConsumed and Object.keys(constReplacements).length > 0
+    # Preserve non-assignment statements (imports, calls, declarations)
+    # in their original order, converting only bound assignments to const.
+    return (constReplacements[idx] ? s for s, idx in body).join '; '
 
   # Fallback: keep the original var declaration so no variable goes
   # undeclared (e.g. chained assignment `a = b = 1`).

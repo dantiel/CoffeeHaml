@@ -4,7 +4,7 @@
 import { TokenType } from './lexer.js'
 import {
   Document, Element, ImplicitDiv, Text, Output, ControlFlow,
-  Comment, Filter, Doctype, Expression, Attribute, SpreadAttribute
+  Comment, Filter, CoffeeBlock, CoffeeYield, Doctype, Expression, Attribute, SpreadAttribute
 } from './ast.js'
 import { CompileError } from './types.js'
 
@@ -45,8 +45,8 @@ class ParserState
       t = @current().type
       if t in [TokenType.TAG, TokenType.CLASS, TokenType.ID, TokenType.OUTPUT,
                TokenType.OUTPUT_UNESC, TokenType.CONTROL, TokenType.FILTER,
-               TokenType.COMMENT, TokenType.HTML_COMMENT, TokenType.DOCTYPE,
-               TokenType.INDENT, TokenType.DEDENT]
+               TokenType.COFFEE_BLOCK, TokenType.COFFEE_YIELD, TokenType.COMMENT, TokenType.HTML_COMMENT,
+               TokenType.DOCTYPE, TokenType.INDENT, TokenType.DEDENT]
         return
       @advance()
 
@@ -96,6 +96,8 @@ parseNode = (state) ->
     when TokenType.COMMENT      then parseComment state
     when TokenType.HTML_COMMENT then parseHtmlComment state
     when TokenType.FILTER       then parseFilter state
+    when TokenType.COFFEE_BLOCK then parseCoffeeBlock state
+    when TokenType.COFFEE_YIELD then parseCoffeeYield state
     when TokenType.DOCTYPE      then parseDoctype state
     when TokenType.TEXT         then parseText state
     when TokenType.INDENT
@@ -334,6 +336,18 @@ parseFilter = (state) ->
       content = if content then content + '\n' + lines.join('\n') else lines.join '\n'
 
   new Filter filterName, content, token.location
+
+# ─── CoffeeBlock ───────────────────────────────────────────
+
+parseCoffeeBlock = (state) ->
+  token = state.expect TokenType.COFFEE_BLOCK
+  return new CoffeeBlock '' unless token
+  new CoffeeBlock token.value, token.location
+
+parseCoffeeYield = (state) ->
+  token = state.expect TokenType.COFFEE_YIELD
+  return new CoffeeYield '' unless token
+  new CoffeeYield token.value, token.location
 
 # ─── Doctype ───────────────────────────────────────────────
 

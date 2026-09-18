@@ -50,7 +50,7 @@ export options =
   attributeMultilineThreshold:
     category: CAT.ATTRIBUTES
     type: 'int'
-    description: 'Break attributes across lines when count >= this. 0 = always multiline.'
+    description: 'Force attributes across lines when count >= this. 0 = never force (fold only when exceeding printWidth).'
   attributeSort:
     category: CAT.ATTRIBUTES
     type: 'choice'
@@ -127,7 +127,7 @@ export defaultOptions =
   inlineThreshold: -1
   voidElementStyle: 'explicit'
   attributeStyle: 'preserve'
-  attributeMultilineThreshold: 1
+  attributeMultilineThreshold: 0
   attributeSort: 'none'
   quoteStyle: 'preserve'
   coffeeScriptFormat: true

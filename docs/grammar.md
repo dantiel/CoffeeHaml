@@ -292,6 +292,72 @@ depending on configuration.
 
 ---
 
+## CoffeeScript Blocks (`---`)
+
+```
+CoffeeBlock    := '---' Newline
+                  CoffeeBody
+                  '---' Newline
+
+CoffeeBody     := Raw CoffeeScript lines, dedented to column 0.
+```
+
+A fenced raw CoffeeScript area. The body between the two `---` lines is
+taken verbatim (dedented by its minimum indentation) and compiled to
+executable JavaScript via the CoffeeScript bridge, then hoisted to module
+scope — outside any component wrapper. This is how imports, helper
+functions and one-time setup code are expressed without fighting HAML's
+indentation tree.
+
+```haml
+---
+import { blah } from 'ok'
+answer = 42
+---
+%p= answer
+```
+
+Semantics:
+
+- **Escapes indentation**: body lines are dedented to column 0, so a block
+  nested under an element still writes CoffeeScript flush-left.
+- **Module scope**: the compiled statements run once at module load, before
+  any JSX. `import`/`export` therefore stay valid (they are not wrapped in
+  a component function).
+- **No markup**: the block contributes nothing to the render tree.
+
+Note: `---` is a CoffeeHaml fence marker, not an element. For a horizontal
+rule use `%hr` — mapping `---` to `<hr>` is a Markdown/YAML convention, not
+Haml.
+
+---
+
+## Yield Blocks (`===`)
+
+```
+CoffeeYield     := '===' Newline
+                   CoffeeBody
+                   '===' Newline
+```
+
+The `===` fence is the multiline counterpart to `=` (output): its body is
+CoffeeScript, dedented to column 0 exactly like a `---` block, but instead
+of being hoisted to module scope its **final value is yielded as content**
+at that position in the render tree (escaped, matching `=`).
+
+```haml
+%p
+  ===
+  name = computeName()
+  "Hello, #{name}"
+  ===
+```
+
+A single-expression body compiles directly; a multi-statement body is
+wrapped in an IIFE so the last expression is the yielded value.
+
+---
+
 ## Raw Text / Passthrough
 
 ```

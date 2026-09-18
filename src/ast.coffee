@@ -14,6 +14,8 @@ export NodeKind = [
   'ControlFlow'
   'Comment'
   'Filter'
+  'CoffeeBlock'
+  'CoffeeYield'
   'Doctype'
 ]
 
@@ -168,6 +170,30 @@ export class Filter extends Node
   content: ''
 
   constructor: (@filterName, @content, location = null) ->
+    super location
+
+# ─── CoffeeBlock ───────────────────────────────────────────
+# A fenced raw CoffeeScript block (--- ... ---). Its content is a
+# multi-line CoffeeScript program, compiled to executable JS statements
+# and hoisted to module scope (imports, helpers, setup code).
+
+export class CoffeeBlock extends Node
+  kind: 'CoffeeBlock'
+  content: ''
+
+  constructor: (@content, location = null) ->
+    super location
+
+# ─── CoffeeYield ───────────────────────────────────────────
+# A fenced CoffeeScript yield block (=== ... ===). The body is a
+# multi-line CoffeeScript program whose final value is yielded as
+# content at that position (the multiline counterpart to `=`).
+
+export class CoffeeYield extends Node
+  kind: 'CoffeeYield'
+  content: ''
+
+  constructor: (@content, location = null) ->
     super location
 
 # ─── Doctype ───────────────────────────────────────────────

@@ -3,14 +3,14 @@
 
 import {
   Document, Element, ImplicitDiv, Text, Output, ControlFlow,
-  Comment, Filter, Doctype, Node, Expression, Attribute, SpreadAttribute
+  Comment, Filter, CoffeeBlock, CoffeeYield, Doctype, Node, Expression, Attribute, SpreadAttribute
 } from '../ast.js'
 import { formatCoffeeScript, formatCoffeeScriptBlock } from './coffeescript-formatter.js'
 import { createRequire } from 'module'
 
 _require = createRequire import.meta.url
 _prettier = _require 'prettier'
-{ group, indent, hardline, join } = _prettier.doc.builders
+{ group, indent, hardline, line, join } = _prettier.doc.builders
 
 # ─── Format Options ────────────────────────────────────────
 # CoffeeHamlFormatOptions shape (runtime):
@@ -28,7 +28,7 @@ defaultOpts =
   inlineThreshold: -1
   voidElementStyle: 'self-closing'
   attributeStyle: 'preserve'
-  attributeMultilineThreshold: 1
+  attributeMultilineThreshold: 0
   attributeSort: 'none'
   quoteStyle: 'preserve'
   coffeeScriptFormat: true
@@ -151,6 +151,10 @@ printNode = (path, o, printFn) ->
     return printComment path, o, printFn
   if node instanceof Filter
     return printFilter path, o, printFn
+  if node instanceof CoffeeBlock
+    return printCoffeeBlock path, o, printFn
+  if node instanceof CoffeeYield
+    return printCoffeeYield path, o, printFn
   if node instanceof Doctype
     return printDoctype path, o
   ''
@@ -205,7 +209,7 @@ printElement = (path, o, printFn) ->
   else if node.isSelfClosing
     selfClose = '/'
 
-  header = "%#{tag}#{classes}#{id}#{attrs}#{selfClose}"
+  header = ["%#{tag}#{classes}#{id}", attrs, selfClose]
 
   # Children
   children = node.children ? []
@@ -213,9 +217,11 @@ printElement = (path, o, printFn) ->
     return header
 
   # Inline child
-  if isSingleInlineChild(children) and o.controlFlowInline isnt false
+  if isSingleInlineChild(children)
     childDoc = path.map(printFn, 'children')?[0] ? ''
-    return "#{header} #{childDoc}"
+    # Output (= expr) carries its own separator; Text needs a space
+    sep = if children[0] instanceof Output then '' else ' '
+    return [header, sep, childDoc]
 
   childDocs = path.map(printFn, 'children') ? []
   joined = joinChildrenWithBlanks children, childDocs, o
@@ -231,7 +237,7 @@ printImplicitDiv = (path, o, printFn) ->
   attrStyle = detectStyle node, o
   attrs = formatAttributes node, attrStyle, o
 
-  header = "#{classes}#{id}#{attrs}"
+  header = ["#{classes}#{id}", attrs]
 
   children = node.children ? []
   if children.length is 0
@@ -239,7 +245,8 @@ printImplicitDiv = (path, o, printFn) ->
 
   if isSingleInlineChild(children)
     childDoc = path.map(printFn, 'children')?[0] ? ''
-    return "#{header} #{childDoc}"
+    sep = if children[0] instanceof Output then '' else ' '
+    return [header, sep, childDoc]
 
   childDocs = path.map(printFn, 'children') ? []
   joined = joinChildrenWithBlanks children, childDocs, o
@@ -353,6 +360,26 @@ printFilter = (path, o, _printFn) ->
   else
     header
 
+# ─── CoffeeBlock ───────────────────────────────────────────
+
+# Build a fenced block doc using `hardline` so Prettier can re-indent the
+# dedented body to the correct nesting level (raw `\n` strings would not).
+printFence = (fence, content) ->
+  if content
+    parts = [fence]
+    for line in content.split '\n'
+      parts.push hardline, line
+    parts.push hardline, fence
+    parts
+  else
+    [fence, hardline, fence]
+
+printCoffeeBlock = (path, o, _printFn) ->
+  printFence '---', path.node.content
+
+printCoffeeYield = (path, o, _printFn) ->
+  printFence '===', path.node.content
+
 # ─── Doctype ───────────────────────────────────────────────
 
 printDoctype = (path, o) ->
@@ -378,7 +405,9 @@ formatAttributes = (node, style, o) ->
   attrs = node.attributes ? []
   return '' unless attrs.length > 0
 
-  # Bare style: HTML-style key="val" key2={expr} — space-separated
+  # Bare style: HTML-style key="val" key2={expr} — space-separated.
+  # Never folded: an indented continuation line would parse as a child
+  # element, silently changing the tree. Bare attributes stay inline.
   if style is 'bare'
     bareParts = for attr in attrs
       if attr.spread
@@ -389,32 +418,41 @@ formatAttributes = (node, style, o) ->
         attr.name
       else
         "#{attr.name}=#{attr.value.source ? ''}"
-    " #{bareParts.join ' '}"
+    return " #{bareParts.join ' '}"
+
+  parts = []
+  for attr in attrs
+    if attr.spread
+      expr = attr.expression.source ? ''
+      if o.coffeeScriptFormat then expr = formatCoffeeScript expr, o
+      parts.push if style is 'parens' then "...#{expr}" else "{#{expr}...}"
+      continue
+
+    name = attr.name
+    val = attr.value.source ? ''
+    if o.coffeeScriptFormat then val = formatCoffeeScript val, o
+
+    if attr.shorthand
+      parts.push name
+    else
+      parts.push "#{name}: #{val}"
+
+  # Count-based forcing: a positive threshold breaks even when the
+  # attributes would otherwise fit within printWidth.
+  forceBreak = o.attributeMultilineThreshold > 0 and attrs.length >= o.attributeMultilineThreshold
+  sep = if forceBreak then hardline else line
+
+  if style is 'braces'
+    open = '{'
+    close = '}'
+  else if style is 'parens'
+    open = '('
+    close = ')'
   else
-    parts = []
-    for attr in attrs
-      if attr.spread
-        expr = attr.expression.source ? ''
-        if o.coffeeScriptFormat then expr = formatCoffeeScript expr, o
-        parts.push if style is 'parens' then "...#{expr}" else "{#{expr}...}"
-        continue
+    # Unknown style — inline fallback, no folding.
+    return parts.join ', '
 
-      name = attr.name
-      val = attr.value.source ? ''
-      if o.coffeeScriptFormat then val = formatCoffeeScript val, o
-
-      if attr.shorthand
-        parts.push name
-      else
-        parts.push "#{name}: #{val}"
-
-    switch style
-      when 'braces'
-        "{ #{parts.join ', '} }"
-      when 'parens'
-        "( #{parts.join ', '} )"
-      else
-        parts.join ', '
+  group [open, indent([sep, join([',', sep], parts)]), sep, close]
 
 # ─── CoffeeScript Embed (for Prettier embed) ───────────────
 

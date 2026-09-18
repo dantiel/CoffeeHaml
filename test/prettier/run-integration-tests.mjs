@@ -117,6 +117,40 @@ async function run() {
     '  key2="val2"\n' +
     ') content');
 
+  // ─── Attribute folding (printWidth) ─────────────────────
+  await test('fold braces on printWidth',
+    '%div{ firstName: "John", lastName: "Doe", email: "john.doe@example.com", role: "admin" }',
+    { printWidth: 40 },
+    '%div{\n' +
+    '  firstName: "John",\n' +
+    '  lastName: "Doe",\n' +
+    '  email: "john.doe@example.com",\n' +
+    '  role: "admin"\n' +
+    '}');
+  await test('fold parens on printWidth',
+    '%div(firstName="John", lastName="Doe", email="john.doe@example.com")',
+    { printWidth: 40 },
+    '%div(\n' +
+    '  firstName="John",\n' +
+    '  lastName="Doe",\n' +
+    '  email="john.doe@example.com"\n' +
+    ')');
+  await test('short attributes stay inline',
+    '%div{ a: "1" }',
+    { printWidth: 40 },
+    '%div{ a: "1" }');
+  await test('bare attributes never fold',
+    '%div firstName="John" lastName="Doe" email="john.doe@example.com"',
+    { printWidth: 40 },
+    '%div firstName="John" lastName="Doe" email="john.doe@example.com"');
+  await test('attributeMultilineThreshold forces fold',
+    '%div{ a: "1", b: "2" }',
+    { attributeMultilineThreshold: 1 },
+    '%div{\n' +
+    '  a: "1",\n' +
+    '  b: "2"\n' +
+    '}');
+
   // ─── Comments ───────────────────────────────────────────
   await test('comment',
     '/# This is a comment\n' +
@@ -135,8 +169,33 @@ async function run() {
     '  x = 1\n' +
     '  y = 2');
 
-  // ─── Doctype ────────────────────────────────────────────
+  // ─── Doctype ───
   await test('doctype', '!!! 5\n%div hello');
+
+  // ─── CoffeeBlock (fenced CoffeeScript) ───
+  await test('coffee block round-trips',
+    '---\n' +
+    'import { blah } from "ok"\n' +
+    'answer = 42\n' +
+    '---\n' +
+    '%p= answer');
+  await test('nested coffee block round-trips',
+    '%div\n' +
+    '  ---\n' +
+    '  helper = (x) -> x * 2\n' +
+    '  ---\n' +
+    '  %p= helper 21');
+  await test('yield block round-trips',
+    '%div\n' +
+    '  ===\n' +
+    '  name = computeName()\n' +
+    '  "Hello, #{name}"\n' +
+    '  ===');
+  await test('single-expression yield block round-trips',
+    '%p\n' +
+    '  ===\n' +
+    '  user.name\n' +
+    '  ===');
 
   // ─── Prologue ───────────────────────────────────────────
   await test('prologue preserved',

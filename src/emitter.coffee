@@ -2,9 +2,9 @@
 
 import {
   Document, Element, ImplicitDiv, Text, Output, ControlFlow,
-  Comment, Filter, Doctype, Node, Expression
+  Comment, Filter, CoffeeBlock, CoffeeYield, Doctype, Node, Expression
 } from './ast.js'
-import { compileExpression, compileStatement } from './expressions.js'
+import { compileExpression, compileStatement, compileYield } from './expressions.js'
 import { CompileWarning } from './types.js'
 import { SourceMapGenerator } from 'source-map'
 
@@ -66,6 +66,15 @@ export emit = (ast, options = {}) ->
     for line in ast.prologue
       state.emitLine line
   state.emitLine()
+
+  # Emit fenced CoffeeScript blocks (--- ... ---) at module scope.
+  # Imports, helpers and setup code must live outside any component
+  # wrapper, so they are collected here and emitted before the body.
+  blocks = collectCoffeeBlocks ast.children, []
+  if blocks.length > 0
+    for b in blocks
+      state.emitLine compileStatement b.content, b.location
+    state.emitLine()
 
   wrap = options.wrap
   if wrap and wrap isnt 'none'
@@ -168,6 +177,24 @@ splitJsStatements = (body) ->
 
 # ─── Node Emitters ─────────────────────────────────────────
 
+# Recursively collect fenced CoffeeScript blocks for module-level hoisting,
+# removing them from the render tree in place (they contribute no markup).
+collectCoffeeBlocks = (nodes, acc) ->
+  return acc unless nodes?.length
+  i = 0
+  while i < nodes.length
+    node = nodes[i]
+    if node instanceof CoffeeBlock
+      acc.push node
+      nodes.splice i, 1
+      continue
+    if node.children?.length > 0
+      collectCoffeeBlocks node.children, acc
+    if node.next?
+      collectCoffeeBlocks [node.next], acc
+    i++
+  acc
+
 emitNodes = (nodes, state, isRoot = false) ->
   i = 0
   while i < nodes.length
@@ -182,6 +209,8 @@ emitNodes = (nodes, state, isRoot = false) ->
     i++
 
 emitNode = (node, state, isRoot) ->
+  if node instanceof CoffeeBlock  then return  # hoisted to module scope above
+  if node instanceof CoffeeYield  then return emitCoffeeYield node, state
   if node instanceof Element      then emitElement node, state
   else if node instanceof ImplicitDiv then emitImplicitDiv node, state
   else if node instanceof Text        then emitText node, state
@@ -332,6 +361,8 @@ emitChildToJs = (node, state) ->
     return emitControlFlowToJs node, state
   if node instanceof Filter
     return emitFilterToJs node, state
+  if node instanceof CoffeeYield
+    return compileYield node.content, node.location
   'null'
 
 # ─── Control Flow ──────────────────────────────────────────
@@ -526,6 +557,10 @@ emitOutput = (out, state) ->
   emitNode child, state, false for child in elementChildren
 
   state.emitLine result + ';'
+
+emitCoffeeYield = (node, state) ->
+  js = compileYield node.content, node.location
+  state.emitLine "jsx(Fragment, { children: #{js} });"
 
 emitArrowOutput = (exprSource, elementChildren, out, state) ->
   stripped = exprSource.replace(/\s*->\s*$/, '').trim()

@@ -18,6 +18,8 @@ export TokenType =
   COMMENT:      'COMMENT'
   HTML_COMMENT: 'HTML_COMMENT'
   FILTER:       'FILTER'
+  COFFEE_BLOCK: 'COFFEE_BLOCK'
+  COFFEE_YIELD: 'COFFEE_YIELD'
   DOCTYPE:      'DOCTYPE'
   TEXT:         'TEXT'
   PROLOGUE:     'PROLOGUE'
@@ -68,7 +70,9 @@ export tokenize = (source, filename = null) ->
   lineIndex = 0
   inPrologue = true
 
-  for rawLine in lines
+  i = 0
+  while i < lines.length
+    rawLine = lines[i]
     line = rawLine.replace /\r$/, ''
     lineLength = rawLine.length + 1
 
@@ -76,6 +80,7 @@ export tokenize = (source, filename = null) ->
     if line.trim() is ''
       offset += lineLength
       lineIndex++
+      i++
       continue
 
     indent = countIndent line
@@ -84,6 +89,64 @@ export tokenize = (source, filename = null) ->
     if content is ''
       offset += lineLength
       lineIndex++
+      i++
+      continue
+
+    # ─── Multiline CoffeeScript fences: --- ... --- / === ... === ───
+    # A line consisting solely of `---` or `===` opens a raw CoffeeScript
+    # area that escapes HAML indentation. `---` compiles the body to code
+    # hoisted to module scope (COFFEE_BLOCK); `===` yields the body's final
+    # value as content at that position (COFFEE_YIELD). The body runs until
+    # the matching closing fence line; it is dedented to column 0 and
+    # tokenized as a single token (no INDENT/DEDENT inside).
+    fence = content.trim()
+    if fence is '---' or fence is '==='
+      inPrologue = false
+      fenceIndent = indent
+      fenceStartLine = lineIndex
+      fenceStartOffset = offset + indent
+
+      # Handle indentation change (same as a normal line)
+      currentIndent = indentStack[indentStack.length - 1]
+      if fenceIndent > currentIndent
+        indentStack.push fenceIndent
+        tokens.push indentToken fenceIndent, fenceStartOffset, fenceIndent, filename, fenceStartLine
+      else if fenceIndent < currentIndent
+        while indentStack.length > 1 and fenceIndent < indentStack[indentStack.length - 1]
+          indentStack.pop()
+          tokens.push dedentToken fenceStartOffset, filename, fenceStartLine
+        if fenceIndent isnt indentStack[indentStack.length - 1]
+          indentStack.push fenceIndent
+          tokens.push indentToken fenceIndent, fenceStartOffset, fenceIndent, filename, fenceStartLine
+
+      # Consume opening fence
+      offset += lineLength
+      lineIndex++
+      i++
+
+      # Collect body until closing fence
+      body = []
+      while i < lines.length
+        bodyLine = lines[i].replace /\r$/, ''
+        if bodyLine.trim() is fence
+          offset += lines[i].length + 1
+          lineIndex++
+          i++
+          break
+        body.push bodyLine
+        offset += lines[i].length + 1
+        lineIndex++
+        i++
+
+      tokens.push
+        type: (if fence is '===' then TokenType.COFFEE_YIELD else TokenType.COFFEE_BLOCK)
+        value: (dedentLines body).join '\n'
+        location:
+          start: line: fenceStartLine, column: fenceIndent
+          end: line: lineIndex, column: 0
+          offset: fenceStartOffset
+          length: offset - fenceStartOffset
+          file: filename
       continue
 
     # Prologue detection: non-indented JS before first HAML construct
@@ -99,6 +162,7 @@ export tokenize = (source, filename = null) ->
           file: filename
       offset += lineLength
       lineIndex++
+      i++
       continue
     inPrologue = false
 
@@ -123,6 +187,7 @@ export tokenize = (source, filename = null) ->
 
     offset += lineLength
     lineIndex++
+    i++
 
   # Emit remaining DEDENT tokens at EOF
   while indentStack.length > 1
@@ -348,6 +413,30 @@ countIndent = (line) ->
     else
       break
   count
+
+# Strip up to `amount` visual columns of leading whitespace (space=1, tab=2).
+stripIndent = (line, amount) ->
+  seen = 0
+  i = 0
+  while i < line.length and seen < amount
+    ch = line[i]
+    if ch is ' ' then seen += 1
+    else if ch is '\t' then seen += 2
+    else break
+    i++
+  line.slice i
+
+# Normalize a fenced block's body to column 0 by removing the minimum
+# indentation found across its non-empty lines.
+dedentLines = (lines) ->
+  min = null
+  for l in lines
+    continue if l.trim() is ''
+    ind = countIndent l
+    min = ind if min is null or ind < min
+  amount = if min is null then 0 else min
+  return lines if amount is 0
+  (stripIndent l, amount for l in lines)
 
 indentToken = (_indent, offset, level, filename = null, line = 0) ->
   type: TokenType.INDENT
