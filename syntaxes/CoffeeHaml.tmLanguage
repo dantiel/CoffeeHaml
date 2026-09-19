@@ -17,6 +17,14 @@
 		</dict>
 		<dict>
 			<key>include</key>
+			<string>#coffee-block</string>
+		</dict>
+		<dict>
+			<key>include</key>
+			<string>#coffee-yield</string>
+		</dict>
+		<dict>
+			<key>include</key>
 			<string>#comment-haml</string>
 		</dict>
 		<dict>
@@ -182,6 +190,40 @@
 			<string>(?&lt;=[\{,])[\s]*([\w$]+)(?=[,\}])</string>
 			<key>name</key>
 			<string>meta.attribute.shorthand.coffeehaml</string>
+		</dict>
+		<key>coffee-block</key>
+		<dict>
+			<key>begin</key>
+			<string>^([ \t]*)(---)[ \t]*$</string>
+			<key>beginCaptures</key>
+			<dict>
+				<key>2</key>
+				<dict>
+					<key>name</key>
+					<string>punctuation.definition.coffee-block.coffeehaml</string>
+				</dict>
+			</dict>
+			<key>contentName</key>
+			<string>source.coffee.embedded.haml</string>
+			<key>end</key>
+			<string>^([ \t]*)(---)[ \t]*$</string>
+			<key>endCaptures</key>
+			<dict>
+				<key>2</key>
+				<dict>
+					<key>name</key>
+					<string>punctuation.definition.coffee-block.coffeehaml</string>
+				</dict>
+			</dict>
+			<key>name</key>
+			<string>meta.coffee-block.coffeehaml</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>include</key>
+					<string>source.coffee</string>
+				</dict>
+			</array>
 		</dict>
 		<key>coffee-boolean</key>
 		<dict>
@@ -565,6 +607,40 @@
 			<string>\b([a-zA-Z_$][\w$]*)\b</string>
 			<key>name</key>
 			<string>variable.other.coffeehaml</string>
+		</dict>
+		<key>coffee-yield</key>
+		<dict>
+			<key>begin</key>
+			<string>^([ \t]*)(===)[ \t]*$</string>
+			<key>beginCaptures</key>
+			<dict>
+				<key>2</key>
+				<dict>
+					<key>name</key>
+					<string>punctuation.definition.coffee-yield.coffeehaml</string>
+				</dict>
+			</dict>
+			<key>contentName</key>
+			<string>source.coffee.embedded.haml</string>
+			<key>end</key>
+			<string>^([ \t]*)(===)[ \t]*$</string>
+			<key>endCaptures</key>
+			<dict>
+				<key>2</key>
+				<dict>
+					<key>name</key>
+					<string>punctuation.definition.coffee-yield.coffeehaml</string>
+				</dict>
+			</dict>
+			<key>name</key>
+			<string>meta.coffee-yield.coffeehaml</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>include</key>
+					<string>source.coffee</string>
+				</dict>
+			</array>
 		</dict>
 		<key>coffeescript-expression</key>
 		<dict>

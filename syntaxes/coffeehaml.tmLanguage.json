@@ -12,6 +12,12 @@
       "include": "#prologue"
     },
     {
+      "include": "#coffee-block"
+    },
+    {
+      "include": "#coffee-yield"
+    },
+    {
       "include": "#comment-haml"
     },
     {
@@ -293,6 +299,48 @@
         }
       },
       "end": "$",
+      "patterns": [
+        {
+          "include": "source.coffee"
+        }
+      ],
+      "contentName": "source.coffee.embedded.haml"
+    },
+    "coffee-block": {
+      "name": "meta.coffee-block.coffeehaml",
+      "begin": "^([ \\t]*)(---)[ \\t]*$",
+      "beginCaptures": {
+        "2": {
+          "name": "punctuation.definition.coffee-block.coffeehaml"
+        }
+      },
+      "end": "^([ \\t]*)(---)[ \\t]*$",
+      "endCaptures": {
+        "2": {
+          "name": "punctuation.definition.coffee-block.coffeehaml"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.coffee"
+        }
+      ],
+      "contentName": "source.coffee.embedded.haml"
+    },
+    "coffee-yield": {
+      "name": "meta.coffee-yield.coffeehaml",
+      "begin": "^([ \\t]*)(===)[ \\t]*$",
+      "beginCaptures": {
+        "2": {
+          "name": "punctuation.definition.coffee-yield.coffeehaml"
+        }
+      },
+      "end": "^([ \\t]*)(===)[ \\t]*$",
+      "endCaptures": {
+        "2": {
+          "name": "punctuation.definition.coffee-yield.coffeehaml"
+        }
+      },
       "patterns": [
         {
           "include": "source.coffee"
