@@ -302,28 +302,28 @@ CoffeeBlock    := '---' Newline
 CoffeeBody     := Raw CoffeeScript lines, dedented to column 0.
 ```
 
-A fenced raw CoffeeScript area. The body between the two `---` lines is
-taken verbatim (dedented by its minimum indentation) and compiled to
-executable JavaScript via the CoffeeScript bridge, then hoisted to module
-scope — outside any component wrapper. This is how imports, helper
-functions and one-time setup code are expressed without fighting HAML's
-indentation tree.
+The `---` fence is the multiline counterpart to `-` (statement). The body
+between the two `---` lines is taken verbatim (dedented by its minimum
+indentation) and compiled to executable JavaScript via the CoffeeScript
+bridge. The resulting statements run at **render time**, produce no markup,
+and behave exactly like a block of `-` lines.
 
 ```haml
 ---
-import { blah } from 'ok'
-answer = 42
+total = price * quantity
+tax = total * 0.08
 ---
-%p= answer
+%p= total + tax
 ```
 
 Semantics:
 
 - **Escapes indentation**: body lines are dedented to column 0, so a block
   nested under an element still writes CoffeeScript flush-left.
-- **Module scope**: the compiled statements run once at module load, before
-  any JSX. `import`/`export` therefore stay valid (they are not wrapped in
-  a component function).
+- **Render-time**: the compiled statements run on every render, before the
+  JSX at their position. In a wrapped component they are hoisted into the
+  render expression alongside `-` statements; with `wrap: 'none'` they emit
+  in place.
 - **No markup**: the block contributes nothing to the render tree.
 
 Note: `---` is a CoffeeHaml fence marker, not an element. For a horizontal
@@ -342,7 +342,7 @@ CoffeeYield     := '===' Newline
 
 The `===` fence is the multiline counterpart to `=` (output): its body is
 CoffeeScript, dedented to column 0 exactly like a `---` block, but instead
-of being hoisted to module scope its **final value is yielded as content**
+of running as statements its **final value is yielded as content**
 at that position in the render tree (escaped, matching `=`).
 
 ```haml
@@ -366,29 +366,26 @@ CoffeePreamble  := '~~~' Newline
                    '~~~' Newline
 ```
 
-The `~~~` fence is the render-time counterpart to `-` (statement). Its body
-is CoffeeScript, dedented to column 0 exactly like a `---` block, but instead
-of being hoisted to module scope it is compiled to statements placed **inside
-the component function body, before the `return`** — running on every render,
-producing no markup, and able to hold hooks.
+The `~~~` fence holds module-scope code. Its body is CoffeeScript, dedented
+to column 0, and compiled to statements hoisted to **module scope** — outside
+any component wrapper. This is where imports, helper functions and one-time
+setup code live (the once-at-import region).
 
 ```haml
 ~~~
-[count, setCount] = useState 0
-total = count * 2
+import { useState } from 'react'
+formatPrice = (n) -> "$#{n.toFixed 2}"
 ~~~
-%p= total
+%p= formatPrice total
 ```
 
 Semantics:
 
-- **Render-time**: runs on every render, unlike `---` (module scope, once).
-- **No output**: statements execute for their side effects only; the body's
-  final value is discarded (use `===` to yield a value).
-- **Hook-capable**: because the statements live in the function body — not
-  an IIFE — `useState`, `useEffect`, `useMemo` etc. are valid.
-- **Component-only**: requires `wrap` (component/HOC). With `wrap: 'none'`
-  the block falls back to module scope.
+- **Module scope**: the compiled statements run once at module load, before
+  any JSX. `import`/`export` stay valid (they are not wrapped in a function).
+- **No markup**: the block contributes nothing to the render tree.
+- **Runs once**: unlike `---` (render-time), the body does not rerun per
+  render — ideal for imports, constants and pure helpers.
 
 ---
 

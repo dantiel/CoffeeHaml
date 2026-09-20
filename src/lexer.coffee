@@ -96,12 +96,13 @@ export tokenize = (source, filename = null) ->
     # ─── Multiline CoffeeScript fences: --- / === / ~~~ ───
     # A line consisting solely of `---`, `===` or `~~~` opens a raw
     # CoffeeScript area that escapes HAML indentation. `---` compiles the
-    # body to code hoisted to module scope (COFFEE_BLOCK); `===` yields the
-    # body's final value as content (COFFEE_YIELD); `~~~` compiles the body
-    # to statements placed in the component function body before the return
-    # (COFFEE_PREAMBLE) — render-time, hook-capable, no output. The body
-    # runs until the matching closing fence line; it is dedented to column 0
-    # and tokenized as a single token (no INDENT/DEDENT inside).
+    # body to render-time statements (COFFEE_BLOCK — the multiline
+    # counterpart to `-`); `===` yields the body's final value as content
+    # (COFFEE_YIELD — the multiline counterpart to `=`); `~~~` compiles the
+    # body to code hoisted to module scope, running once at import
+    # (COFFEE_PREAMBLE). The body runs until the matching closing fence line;
+    # it is dedented to column 0 and tokenized as a single token (no
+    # INDENT/DEDENT inside).
     fence = content.trim()
     if fence in ['---', '===', '~~~']
       inPrologue = false

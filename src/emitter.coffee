@@ -28,6 +28,11 @@ class EmitState
   directEmit: false
 
   constructor: (@options = {}) ->
+    # `hoisted` and `warnings` must be instance-level (not prototype-level):
+    # CoffeeScript emits class-body arrays as shared prototype properties, so
+    # every EmitState would otherwise mutate the same accumulator across calls.
+    @hoisted = []
+    @warnings = []
     if @options.sourceMap and @options.filename
       @sourceMapGenerator = new SourceMapGenerator file: @options.filename
 
@@ -67,19 +72,15 @@ export emit = (ast, options = {}) ->
       state.emitLine line
   state.emitLine()
 
-  # Emit fenced CoffeeScript blocks (--- ... ---) at module scope.
-  # Imports, helpers and setup code must live outside any component
-  # wrapper, so they are collected here and emitted before the body.
-  blocks = collectCoffeeBlocks ast.children, []
-  if blocks.length > 0
-    for b in blocks
-      state.emitLine compileStatement b.content, b.location
-    state.emitLine()
-
-  # Collect component-preamble blocks (~~~ ... ~~~). These run on every
-  # render inside the component function body, before the return statement
-  # — the render-time counterpart to the module-scoped `---` block.
+  # Emit fenced `~~~ ... ~~~` blocks at module scope. Imports, helpers and
+  # setup code must live outside any component wrapper (and cannot rerun per
+  # render), so they are collected here and emitted before the body. This is
+  # the once-at-import region; `---` is the render-time counterpart.
   preambles = collectCoffeePreamble ast.children, []
+  if preambles.length > 0
+    for p in preambles
+      state.emitLine compileStatement p.content, p.location
+    state.emitLine()
 
   wrap = options.wrap
   if wrap and wrap isnt 'none'
@@ -89,21 +90,11 @@ export emit = (ast, options = {}) ->
       when 'observer'   then ['observer']
       else wrap
     bodyExpr = compileComponentBody ast, state
-    preambleJs = ''
-    if preambles.length > 0
-      compiled = (compileStatement p.content, p.location for p in preambles)
-      preambleJs = compiled.join('; ').replace(/;\s*$/, '') + '; '
-    inner = "function #{name}(props) { #{preambleJs}return #{bodyExpr}; }"
+    inner = "function #{name}(props) { return #{bodyExpr}; }"
     wrapped = hocs.reduceRight ((acc, hoc) -> "#{hoc}(#{acc})"), inner
     state.emitLine "export default #{wrapped}"
   else
     state.directEmit = true
-    # No component wrapper — preambles have no function body, so fall back
-    # to module scope alongside `---` blocks.
-    if preambles.length > 0
-      for p in preambles
-        state.emitLine compileStatement p.content, p.location
-      state.emitLine()
     emitNodes ast.children, state, true
 
   result = code: state.output, warnings: state.warnings
@@ -192,26 +183,9 @@ splitJsStatements = (body) ->
 
 # ─── Node Emitters ─────────────────────────────────────────
 
-# Recursively collect fenced CoffeeScript blocks for module-level hoisting,
-# removing them from the render tree in place (they contribute no markup).
-collectCoffeeBlocks = (nodes, acc) ->
-  return acc unless nodes?.length
-  i = 0
-  while i < nodes.length
-    node = nodes[i]
-    if node instanceof CoffeeBlock
-      acc.push node
-      nodes.splice i, 1
-      continue
-    if node.children?.length > 0
-      collectCoffeeBlocks node.children, acc
-    if node.next?
-      collectCoffeeBlocks [node.next], acc
-    i++
-  acc
-
-# Collect fenced `~~~` preamble blocks, removing them from the render tree
-# (they contribute no markup — their statements run before the return).
+# Recursively collect fenced `~~~ ... ~~~` preamble blocks, removing them
+# from the render tree in place (they contribute no markup). Their statements
+# are hoisted to module scope — imports, helpers, and once-only setup.
 collectCoffeePreamble = (nodes, acc) ->
   return acc unless nodes?.length
   i = 0
@@ -242,8 +216,8 @@ emitNodes = (nodes, state, isRoot = false) ->
     i++
 
 emitNode = (node, state, isRoot) ->
-  if node instanceof CoffeeBlock    then return  # hoisted to module scope above
-  if node instanceof CoffeePreamble then return  # hoisted to component preamble
+  if node instanceof CoffeeBlock    then return emitCoffeeBlock node, state
+  if node instanceof CoffeePreamble then return  # hoisted to module scope above
   if node instanceof CoffeeYield    then return emitCoffeeYield node, state
   if node instanceof Element      then emitElement node, state
   else if node instanceof ImplicitDiv then emitImplicitDiv node, state
@@ -395,6 +369,9 @@ emitChildToJs = (node, state) ->
     return emitControlFlowToJs node, state
   if node instanceof Filter
     return emitFilterToJs node, state
+  if node instanceof CoffeeBlock
+    js = compileStatement node.content, node.location
+    return "/* - #{js} */ null"
   if node instanceof CoffeeYield
     return compileYield node.content, node.location
   'null'
@@ -426,6 +403,17 @@ emitStatement = (cf, remaining, state) ->
 
   if remaining.length > 0
     emitNodes remaining, state
+
+# Fenced `--- ... ---` block: the multiline counterpart to `-`. Compiles the
+# body to statements that run at render time, producing no output. In a
+# wrapped component they hoist alongside `-` statements (same IIFE path); in
+# unwrapped mode they emit in place.
+emitCoffeeBlock = (node, state) ->
+  js = compileStatement node.content, node.location
+  if state.directEmit
+    state.emitLine js + ';'
+  else
+    state.hoisted.push js
 
 emitLoop = (cf, remaining, state) ->
   if cf.controlKind is 'for'

@@ -175,8 +175,9 @@ export class Filter extends Node
 
 # ─── CoffeeBlock ───────────────────────────────────────────
 # A fenced raw CoffeeScript block (--- ... ---). Its content is a
-# multi-line CoffeeScript program, compiled to executable JS statements
-# and hoisted to module scope (imports, helpers, setup code).
+# multi-line CoffeeScript program compiled to render-time statements — the
+# multiline counterpart to `-`. It runs on every render and produces no
+# output.
 
 export class CoffeeBlock extends Node
   kind: 'CoffeeBlock'
@@ -187,9 +188,9 @@ export class CoffeeBlock extends Node
 
 # ─── CoffeePreamble ────────────────────────────────────────
 # A fenced CoffeeScript preamble block (~~~ ... ~~~). The body is a
-# multi-line CoffeeScript program compiled to statements placed in the
-# component function body before the return — it runs on every render,
-# produces no output, and may contain hooks.
+# multi-line CoffeeScript program compiled to statements hoisted to module
+# scope — imports, helpers, and once-only setup. It runs once at import and
+# produces no output.
 
 export class CoffeePreamble extends Node
   kind: 'CoffeePreamble'

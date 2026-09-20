@@ -152,9 +152,9 @@ console.log(result.code);
 | `- code` | Arbitrary CoffeeScript statements; continuation via indented lines |
 | `- for x in xs` | Loop → `.map()` |
 | `- else`, `- else if` | Chain conditionals |
-| `---` … `---` | Fenced CoffeeScript block — module-scope code (imports, helpers, setup) |
+| `---` … `---` | Fenced CoffeeScript block — render-time statements (multiline `-`) |
 | `===` … `===` | Fenced yield block — CoffeeScript whose final value renders (escaped) |
-| `~~~` … `~~~` | Fenced preamble block — render-time statements in the component body (hooks) |
+| `~~~` … `~~~` | Fenced preamble block — module-scope code (imports, helpers, setup) |
 | `-# comment` | Haml comment (stripped) |
 | `/ comment` | HTML comment |
 | `.wrapper` | Implicit div |
@@ -176,7 +176,7 @@ Full grammar: [`docs/grammar.md`](docs/grammar.md)
 
 ## Status
 
-**v0.9.0 — production beta.** The compiler pipeline (Lexer → Parser → Emitter)
+**v0.10.0 — production beta.** The compiler pipeline (Lexer → Parser → Emitter)
 is complete. The [Prettier plugin](src/prettier/) provides 16 deactivatable
 formatting options including attribute style preservation, statement merging,
 blank line handling, and CoffeeScript code formatting.
@@ -197,9 +197,9 @@ blank line handling, and CoffeeScript code formatting.
 | Haml/HTML comments | ✅ |
 | `:filter` blocks | ✅ |
 | Prologue passthrough (`import`, `@decorator`) | ✅ |
-| `---` module-scope CoffeeScript block | ✅ |
+| `---` render-time CoffeeScript block | ✅ |
 | `===` yield block (fenced output) | ✅ |
-| `~~~` preamble block (render-time, hook-capable) | ✅ |
+| `~~~` module-scope preamble block | ✅ |
 | Component / HOC wrapping (`wrap: 'observer'`) | ✅ |
 | Vite plugin with HMR | ✅ |
 | CLI `--wrap` flag | ✅ |
