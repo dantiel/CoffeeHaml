@@ -196,6 +196,19 @@ async function run() {
     '  ===\n' +
     '  user.name\n' +
     '  ===');
+  await test('preamble block round-trips',
+    '%div\n' +
+    '  ~~~\n' +
+    '  [count, setCount] = useState 0\n' +
+    '  total = count * 2\n' +
+    '  ~~~\n' +
+    '  %p= total');
+  await test('nested preamble block round-trips',
+    '%div\n' +
+    '  ~~~\n' +
+    '  [count, setCount] = useState 0\n' +
+    '  ~~~\n' +
+    '  %p= count');
 
   // ─── Prologue ───────────────────────────────────────────
   await test('prologue preserved',

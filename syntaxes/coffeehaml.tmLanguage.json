@@ -18,6 +18,9 @@
       "include": "#coffee-yield"
     },
     {
+      "include": "#coffee-preamble"
+    },
+    {
       "include": "#comment-haml"
     },
     {
@@ -339,6 +342,27 @@
       "endCaptures": {
         "2": {
           "name": "punctuation.definition.coffee-yield.coffeehaml"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.coffee"
+        }
+      ],
+      "contentName": "source.coffee.embedded.haml"
+    },
+    "coffee-preamble": {
+      "name": "meta.coffee-preamble.coffeehaml",
+      "begin": "^([ \\t]*)(~~~)[ \\t]*$",
+      "beginCaptures": {
+        "2": {
+          "name": "punctuation.definition.coffee-preamble.coffeehaml"
+        }
+      },
+      "end": "^([ \\t]*)(~~~)[ \\t]*$",
+      "endCaptures": {
+        "2": {
+          "name": "punctuation.definition.coffee-preamble.coffeehaml"
         }
       },
       "patterns": [

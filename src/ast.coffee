@@ -16,6 +16,7 @@ export NodeKind = [
   'Filter'
   'CoffeeBlock'
   'CoffeeYield'
+  'CoffeePreamble'
   'Doctype'
 ]
 
@@ -179,6 +180,19 @@ export class Filter extends Node
 
 export class CoffeeBlock extends Node
   kind: 'CoffeeBlock'
+  content: ''
+
+  constructor: (@content, location = null) ->
+    super location
+
+# ─── CoffeePreamble ────────────────────────────────────────
+# A fenced CoffeeScript preamble block (~~~ ... ~~~). The body is a
+# multi-line CoffeeScript program compiled to statements placed in the
+# component function body before the return — it runs on every render,
+# produces no output, and may contain hooks.
+
+export class CoffeePreamble extends Node
+  kind: 'CoffeePreamble'
   content: ''
 
   constructor: (@content, location = null) ->

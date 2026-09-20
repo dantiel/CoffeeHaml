@@ -358,6 +358,40 @@ wrapped in an IIFE so the last expression is the yielded value.
 
 ---
 
+## Preamble Blocks (`~~~`)
+
+```
+CoffeePreamble  := '~~~' Newline
+                   CoffeeBody
+                   '~~~' Newline
+```
+
+The `~~~` fence is the render-time counterpart to `-` (statement). Its body
+is CoffeeScript, dedented to column 0 exactly like a `---` block, but instead
+of being hoisted to module scope it is compiled to statements placed **inside
+the component function body, before the `return`** — running on every render,
+producing no markup, and able to hold hooks.
+
+```haml
+~~~
+[count, setCount] = useState 0
+total = count * 2
+~~~
+%p= total
+```
+
+Semantics:
+
+- **Render-time**: runs on every render, unlike `---` (module scope, once).
+- **No output**: statements execute for their side effects only; the body's
+  final value is discarded (use `===` to yield a value).
+- **Hook-capable**: because the statements live in the function body — not
+  an IIFE — `useState`, `useEffect`, `useMemo` etc. are valid.
+- **Component-only**: requires `wrap` (component/HOC). With `wrap: 'none'`
+  the block falls back to module scope.
+
+---
+
 ## Raw Text / Passthrough
 
 ```

@@ -2,7 +2,7 @@
 
 import {
   Document, Element, ImplicitDiv, Text, Output, ControlFlow,
-  Comment, Filter, CoffeeBlock, CoffeeYield, Doctype, Node, Expression
+  Comment, Filter, CoffeeBlock, CoffeeYield, CoffeePreamble, Doctype, Node, Expression
 } from './ast.js'
 import { compileExpression, compileStatement, compileYield } from './expressions.js'
 import { CompileWarning } from './types.js'
@@ -76,6 +76,11 @@ export emit = (ast, options = {}) ->
       state.emitLine compileStatement b.content, b.location
     state.emitLine()
 
+  # Collect component-preamble blocks (~~~ ... ~~~). These run on every
+  # render inside the component function body, before the return statement
+  # — the render-time counterpart to the module-scoped `---` block.
+  preambles = collectCoffeePreamble ast.children, []
+
   wrap = options.wrap
   if wrap and wrap isnt 'none'
     name = options.componentName or 'Component'
@@ -84,11 +89,21 @@ export emit = (ast, options = {}) ->
       when 'observer'   then ['observer']
       else wrap
     bodyExpr = compileComponentBody ast, state
-    inner = "function #{name}(props) { return #{bodyExpr}; }"
+    preambleJs = ''
+    if preambles.length > 0
+      compiled = (compileStatement p.content, p.location for p in preambles)
+      preambleJs = compiled.join('; ').replace(/;\s*$/, '') + '; '
+    inner = "function #{name}(props) { #{preambleJs}return #{bodyExpr}; }"
     wrapped = hocs.reduceRight ((acc, hoc) -> "#{hoc}(#{acc})"), inner
     state.emitLine "export default #{wrapped}"
   else
     state.directEmit = true
+    # No component wrapper — preambles have no function body, so fall back
+    # to module scope alongside `---` blocks.
+    if preambles.length > 0
+      for p in preambles
+        state.emitLine compileStatement p.content, p.location
+      state.emitLine()
     emitNodes ast.children, state, true
 
   result = code: state.output, warnings: state.warnings
@@ -195,6 +210,24 @@ collectCoffeeBlocks = (nodes, acc) ->
     i++
   acc
 
+# Collect fenced `~~~` preamble blocks, removing them from the render tree
+# (they contribute no markup — their statements run before the return).
+collectCoffeePreamble = (nodes, acc) ->
+  return acc unless nodes?.length
+  i = 0
+  while i < nodes.length
+    node = nodes[i]
+    if node instanceof CoffeePreamble
+      acc.push node
+      nodes.splice i, 1
+      continue
+    if node.children?.length > 0
+      collectCoffeePreamble node.children, acc
+    if node.next?
+      collectCoffeePreamble [node.next], acc
+    i++
+  acc
+
 emitNodes = (nodes, state, isRoot = false) ->
   i = 0
   while i < nodes.length
@@ -209,8 +242,9 @@ emitNodes = (nodes, state, isRoot = false) ->
     i++
 
 emitNode = (node, state, isRoot) ->
-  if node instanceof CoffeeBlock  then return  # hoisted to module scope above
-  if node instanceof CoffeeYield  then return emitCoffeeYield node, state
+  if node instanceof CoffeeBlock    then return  # hoisted to module scope above
+  if node instanceof CoffeePreamble then return  # hoisted to component preamble
+  if node instanceof CoffeeYield    then return emitCoffeeYield node, state
   if node instanceof Element      then emitElement node, state
   else if node instanceof ImplicitDiv then emitImplicitDiv node, state
   else if node instanceof Text        then emitText node, state

@@ -18,9 +18,10 @@ export TokenType =
   COMMENT:      'COMMENT'
   HTML_COMMENT: 'HTML_COMMENT'
   FILTER:       'FILTER'
-  COFFEE_BLOCK: 'COFFEE_BLOCK'
-  COFFEE_YIELD: 'COFFEE_YIELD'
-  DOCTYPE:      'DOCTYPE'
+  COFFEE_BLOCK:    'COFFEE_BLOCK'
+  COFFEE_YIELD:    'COFFEE_YIELD'
+  COFFEE_PREAMBLE: 'COFFEE_PREAMBLE'
+  DOCTYPE:         'DOCTYPE'
   TEXT:         'TEXT'
   PROLOGUE:     'PROLOGUE'
   INDENT:       'INDENT'
@@ -92,15 +93,17 @@ export tokenize = (source, filename = null) ->
       i++
       continue
 
-    # ─── Multiline CoffeeScript fences: --- ... --- / === ... === ───
-    # A line consisting solely of `---` or `===` opens a raw CoffeeScript
-    # area that escapes HAML indentation. `---` compiles the body to code
-    # hoisted to module scope (COFFEE_BLOCK); `===` yields the body's final
-    # value as content at that position (COFFEE_YIELD). The body runs until
-    # the matching closing fence line; it is dedented to column 0 and
-    # tokenized as a single token (no INDENT/DEDENT inside).
+    # ─── Multiline CoffeeScript fences: --- / === / ~~~ ───
+    # A line consisting solely of `---`, `===` or `~~~` opens a raw
+    # CoffeeScript area that escapes HAML indentation. `---` compiles the
+    # body to code hoisted to module scope (COFFEE_BLOCK); `===` yields the
+    # body's final value as content (COFFEE_YIELD); `~~~` compiles the body
+    # to statements placed in the component function body before the return
+    # (COFFEE_PREAMBLE) — render-time, hook-capable, no output. The body
+    # runs until the matching closing fence line; it is dedented to column 0
+    # and tokenized as a single token (no INDENT/DEDENT inside).
     fence = content.trim()
-    if fence is '---' or fence is '==='
+    if fence in ['---', '===', '~~~']
       inPrologue = false
       fenceIndent = indent
       fenceStartLine = lineIndex
@@ -139,7 +142,10 @@ export tokenize = (source, filename = null) ->
         i++
 
       tokens.push
-        type: (if fence is '===' then TokenType.COFFEE_YIELD else TokenType.COFFEE_BLOCK)
+        type: switch fence
+          when '===' then TokenType.COFFEE_YIELD
+          when '~~~' then TokenType.COFFEE_PREAMBLE
+          else TokenType.COFFEE_BLOCK
         value: (dedentLines body).join '\n'
         location:
           start: line: fenceStartLine, column: fenceIndent

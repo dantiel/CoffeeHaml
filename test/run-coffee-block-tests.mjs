@@ -87,6 +87,41 @@ function ok(cond, label, detail) {
   ok(yields[0]?.value.includes('---'), '--- line preserved inside === body', JSON.stringify(yields[0]?.value));
 }
 
+// ─── `~~~` Preamble: single COFFEE_PREAMBLE token, dedented ─
+{
+  const toks = tokenize('~~~\n  a = 1\n  b = 2\n~~~\n%p hi');
+  const preambles = toks.filter((t) => t.type === 'COFFEE_PREAMBLE');
+  ok(preambles.length === 1, 'exactly one COFFEE_PREAMBLE token', JSON.stringify(toks.map((t) => t.type)));
+  ok(preambles[0]?.value === 'a = 1\nb = 2', 'preamble body dedented to column 0', JSON.stringify(preambles[0]?.value));
+}
+
+// ─── `~~~` preamble lands in component function body ──────
+{
+  const src = '~~~\n[count, setCount] = useState 0\nanswer = 42\n~~~\n%p= answer';
+  const r = compile(src, { wrap: 'component', componentName: 'Counter' });
+  ok(r.errors.length === 0, 'preamble compiles clean', JSON.stringify(r.errors));
+  ok(/useState\(0\)/.test(r.code), 'hook call emitted', r.code);
+  ok(/function Counter\(props\) \{[\s\S]*useState/.test(r.code), 'hook is inside function body (before return)', r.code);
+  ok(r.code.indexOf('useState') < r.code.indexOf('return'), 'preamble emitted before return', r.code);
+}
+
+// ─── `~~~` does not render output (unlike ===) ────────────
+{
+  const src = '%p\n  ~~~\n  total = 1 + 1\n  ~~~\n  = total';
+  const r = compile(src);
+  ok(r.errors.length === 0, 'inline preamble compiles clean', JSON.stringify(r.errors));
+  ok(!/children:\s*null/.test(r.code), 'no null placeholder for preamble', r.code);
+}
+
+// ─── `~~~` with wrap:none falls back to module scope ──────
+{
+  const src = '~~~\nx = 1\ny = x + 1\n~~~\n%p= y';
+  const r = compile(src);
+  ok(r.errors.length === 0, 'wrap:none preamble compiles clean', JSON.stringify(r.errors));
+  ok(/const x = 1/.test(r.code), 'preamble emitted at module scope when unwrapped', r.code);
+  ok(r.code.indexOf('const x') < r.code.indexOf('jsx('), 'module-scope preamble precedes render', r.code);
+}
+
 console.log(`\n${'\u2501'.repeat(40)}`);
 console.log(`  ${passed} passed, ${failed} failed, ${passed + failed} total`);
 console.log(`${'\u2501'.repeat(40)}`);

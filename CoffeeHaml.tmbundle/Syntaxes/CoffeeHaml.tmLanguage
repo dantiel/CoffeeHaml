@@ -25,6 +25,10 @@
 		</dict>
 		<dict>
 			<key>include</key>
+			<string>#coffee-preamble</string>
+		</dict>
+		<dict>
+			<key>include</key>
 			<string>#comment-haml</string>
 		</dict>
 		<dict>
@@ -634,6 +638,40 @@
 			</dict>
 			<key>name</key>
 			<string>meta.coffee-yield.coffeehaml</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>include</key>
+					<string>source.coffee</string>
+				</dict>
+			</array>
+		</dict>
+		<key>coffee-preamble</key>
+		<dict>
+			<key>begin</key>
+			<string>^([ \t]*)(~~~)[ \t]*$</string>
+			<key>beginCaptures</key>
+			<dict>
+				<key>2</key>
+				<dict>
+					<key>name</key>
+					<string>punctuation.definition.coffee-preamble.coffeehaml</string>
+				</dict>
+			</dict>
+			<key>contentName</key>
+			<string>source.coffee.embedded.haml</string>
+			<key>end</key>
+			<string>^([ \t]*)(~~~)[ \t]*$</string>
+			<key>endCaptures</key>
+			<dict>
+				<key>2</key>
+				<dict>
+					<key>name</key>
+					<string>punctuation.definition.coffee-preamble.coffeehaml</string>
+				</dict>
+			</dict>
+			<key>name</key>
+			<string>meta.coffee-preamble.coffeehaml</string>
 			<key>patterns</key>
 			<array>
 				<dict>

@@ -3,7 +3,7 @@
 
 import {
   Document, Element, ImplicitDiv, Text, Output, ControlFlow,
-  Comment, Filter, CoffeeBlock, CoffeeYield, Doctype, Node, Expression, Attribute, SpreadAttribute
+  Comment, Filter, CoffeeBlock, CoffeeYield, CoffeePreamble, Doctype, Node, Expression, Attribute, SpreadAttribute
 } from '../ast.js'
 import { formatCoffeeScript, formatCoffeeScriptBlock } from './coffeescript-formatter.js'
 import { createRequire } from 'module'
@@ -155,6 +155,8 @@ printNode = (path, o, printFn) ->
     return printCoffeeBlock path, o, printFn
   if node instanceof CoffeeYield
     return printCoffeeYield path, o, printFn
+  if node instanceof CoffeePreamble
+    return printCoffeePreamble path, o, printFn
   if node instanceof Doctype
     return printDoctype path, o
   ''
@@ -379,6 +381,9 @@ printCoffeeBlock = (path, o, _printFn) ->
 
 printCoffeeYield = (path, o, _printFn) ->
   printFence '===', path.node.content
+
+printCoffeePreamble = (path, o, _printFn) ->
+  printFence '~~~', path.node.content
 
 # ─── Doctype ───────────────────────────────────────────────
 

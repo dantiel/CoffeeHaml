@@ -4,7 +4,7 @@
 import { TokenType } from './lexer.js'
 import {
   Document, Element, ImplicitDiv, Text, Output, ControlFlow,
-  Comment, Filter, CoffeeBlock, CoffeeYield, Doctype, Expression, Attribute, SpreadAttribute
+  Comment, Filter, CoffeeBlock, CoffeeYield, CoffeePreamble, Doctype, Expression, Attribute, SpreadAttribute
 } from './ast.js'
 import { CompileError } from './types.js'
 
@@ -45,7 +45,7 @@ class ParserState
       t = @current().type
       if t in [TokenType.TAG, TokenType.CLASS, TokenType.ID, TokenType.OUTPUT,
                TokenType.OUTPUT_UNESC, TokenType.CONTROL, TokenType.FILTER,
-               TokenType.COFFEE_BLOCK, TokenType.COFFEE_YIELD, TokenType.COMMENT, TokenType.HTML_COMMENT,
+               TokenType.COFFEE_BLOCK, TokenType.COFFEE_YIELD, TokenType.COFFEE_PREAMBLE, TokenType.COMMENT, TokenType.HTML_COMMENT,
                TokenType.DOCTYPE, TokenType.INDENT, TokenType.DEDENT]
         return
       @advance()
@@ -97,8 +97,9 @@ parseNode = (state) ->
     when TokenType.HTML_COMMENT then parseHtmlComment state
     when TokenType.FILTER       then parseFilter state
     when TokenType.COFFEE_BLOCK then parseCoffeeBlock state
-    when TokenType.COFFEE_YIELD then parseCoffeeYield state
-    when TokenType.DOCTYPE      then parseDoctype state
+    when TokenType.COFFEE_YIELD    then parseCoffeeYield state
+    when TokenType.COFFEE_PREAMBLE then parseCoffeePreamble state
+    when TokenType.DOCTYPE         then parseDoctype state
     when TokenType.TEXT         then parseText state
     when TokenType.INDENT
       state.advance()
@@ -348,6 +349,11 @@ parseCoffeeYield = (state) ->
   token = state.expect TokenType.COFFEE_YIELD
   return new CoffeeYield '' unless token
   new CoffeeYield token.value, token.location
+
+parseCoffeePreamble = (state) ->
+  token = state.expect TokenType.COFFEE_PREAMBLE
+  return new CoffeePreamble '' unless token
+  new CoffeePreamble token.value, token.location
 
 # ─── Doctype ───────────────────────────────────────────────
 
