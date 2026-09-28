@@ -160,9 +160,10 @@ parseElement = (state) ->
         state.advance()
         isSelfClosing = true
 
-  # Parse inline text or output
+  # Parse inline text or output (only if on the same line as the tag)
   children = []
-  if state.current() and not isSelfClosing
+  if state.current() and not isSelfClosing and
+     state.current().location.start.line is tagToken.location.end.line
     switch state.current().type
       when TokenType.OUTPUT
         tok = state.advance()
@@ -217,9 +218,10 @@ parseImplicitDiv = (state) ->
         attributes.push parseBareAttributes(tok.value)...
         attrStyle = 'bare'
 
-  # Parse inline text
+  # Parse inline text (only if on the same line as the div)
   children = []
-  if state.current()?.type is TokenType.TEXT
+  if state.current()?.type is TokenType.TEXT and
+     state.current().location.start.line is firstToken.location.end.line
     textToken = state.advance()
     children.push new Text(textToken.value, textToken.location)
 

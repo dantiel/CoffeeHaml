@@ -7,6 +7,7 @@
  */
 import { compile } from '../dist/compiler.js';
 import { tokenize } from '../dist/lexer.js';
+import { parse } from '../dist/parser.js';
 
 let passed = 0;
 let failed = 0;
@@ -131,6 +132,33 @@ function ok(cond, label, detail) {
   const b = compile('%div\n  ~~~\n  helper = (x) -> x * 2\n  ~~~\n  %p= helper 21', { wrap: 'component', componentName: 'Demo' }).code;
   ok(!b.includes('y = x + 1') && !b.includes('const x = 1'), 'no hoisted/warnings leakage across compile calls', b);
   ok(a.includes('const x = 1'), 'first compile still self-consistent', a);
+}
+
+// ─── Sibling output is not swallowed by an empty element ───
+{
+  // Empty element on its own line, output directive on the next line
+  const doc = parse(tokenize('%span\n= do coffeeStuff')).document;
+  ok(
+    doc.children.length === 2 && doc.children[0].children.length === 0,
+    'empty %span does not swallow next-line = output',
+    JSON.stringify(doc.children),
+  );
+
+  // Element with inline text, output directive on the next line
+  const doc2 = parse(tokenize('%span not empty\n= do coffeeStuff')).document;
+  ok(
+    doc2.children.length === 2 && doc2.children[0].children.length === 1,
+    'inline text stays, next-line = output stays a sibling',
+    JSON.stringify(doc2.children),
+  );
+
+  // Inline output on the same line is still swallowed correctly
+  const doc3 = parse(tokenize('%span= do coffeeStuff')).document;
+  ok(
+    doc3.children.length === 1 && doc3.children[0].children.length === 1,
+    'same-line inline = output still a child',
+    JSON.stringify(doc3.children),
+  );
 }
 
 console.log(`\n${'\u2501'.repeat(40)}`);
